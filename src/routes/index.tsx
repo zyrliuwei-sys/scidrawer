@@ -13,6 +13,7 @@ import { Header } from '@/blocks/header';
 import { Hero } from '@/blocks/hero';
 import { HowItWorks } from '@/blocks/how-it-works';
 import { Pricing } from '@/blocks/pricing';
+import { UseCases } from '@/blocks/use-cases';
 
 function HomePage() {
   return (
@@ -21,6 +22,7 @@ function HomePage() {
       <main>
         <Hero />
         <Features />
+        <UseCases />
         <HowItWorks />
         <FigureLibrarySection />
         <Pricing />
@@ -39,13 +41,28 @@ export const Route = createFileRoute('/')({
     const locale = getLocale();
     const opts = { locale: locale as (typeof locales)[number] };
     // Capture the request origin so canonical/og:url match the actual host —
-    // VITE_APP_URL is often localhost in dev and unset on Vercel previews,
-    // which would otherwise point canonical at http://localhost:3000.
+    // VITE_APP_URL is often localhost in dev, falling back to envConfigs.app_url
+    // would otherwise point canonical at http://localhost:3000. On Vercel,
+    // VERCEL_PROJECT_PRODUCTION_URL is the production domain — prefer it for
+    // canonical so previews don't leak their URLs into the sitemap.
+    const vercelProductionUrl =
+      process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+      (process.env.VERCEL_ENV === 'production'
+        ? process.env.VERCEL_URL
+        : undefined);
+    const productionOrigin = vercelProductionUrl
+      ? `https://${vercelProductionUrl}`
+      : undefined;
     const origin = (() => {
       try {
-        return new URL(request.url).origin;
+        const parsed = new URL(request.url).origin;
+        // Ignore localhost in non-dev environments — fall back to production.
+        if (parsed.hostname === 'localhost' && productionOrigin) {
+          return productionOrigin;
+        }
+        return parsed;
       } catch {
-        return envConfigs.app_url;
+        return productionOrigin ?? envConfigs.app_url;
       }
     })();
     return {
