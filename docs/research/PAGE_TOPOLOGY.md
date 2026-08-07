@@ -16,21 +16,21 @@
 
 ## Sections (top → bottom)
 
-| #   | Section name                                    | Notes                                                                                                                                                                                                                   |
-| --- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Top nav with tabs**                           | "History", "Sign In (Free)" buttons + tab bar: "By Text" / "By Sketch" / "By Img" / "SVG Editor" / "+ New Dialogue" / "New" / "Paper to Poster (Try Beta)"                                                              |
-| 2   | **Page hero + main generator panel**            | H1 "AI Scientific Figure Generator", subheadline, big textarea, "Add reference sketches or images", aspect ratio (1:1) + model select (GPT Image 2) + Generate button. Visually wrapped at `padding: 32px 112px`        |
-| 3   | **Example prompts**                             | H2 "Example prompts". 4 prompt cards: "LNP mRNA delivery graphical abstract", "Leaf cross-section with vascular bundles", "Protein interaction network with modular hubs", "Microservice topology with async messaging" |
-| 4   | **Recommended for You**                         | H2 "Recommended for You" — personalized grid; skip in clone (no backend)                                                                                                                                                |
-| 5   | **How to Create (4 steps)**                     | H2 "How to Create Scientific Figures with FigPad". Cards: 1Choose / 2Describe / 3Generate / 4Export. Padding: 80px 0px 56px                                                                                             |
-| 6   | **AI Diagram Generator, Editor and Vectorizer** | H2 mixed CJK + EN. Feature grid: "Generate Scientific Diagrams", "Edit Scientific Figure Text Online", "Image to svg converter", "Export your figures in the format you need." Padding: 64px 0px                        |
-| 7   | **FAQ**                                         | H2 "AI Scientific Figure Generator FAQ". 6 Q&A accordion items                                                                                                                                                          |
-| 8   | **Footer**                                      | Standard footer                                                                                                                                                                                                         |
+| #   | Section name                         | Notes                                                                                                                                                                                                                   |
+| --- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Top nav with tabs**                | "History", "Sign In (Free)" buttons + tab bar: "By Text" / "By Sketch" / "By Img" / "+ New Dialogue" / "New" / "Paper to Poster (Try Beta)"                                                                             |
+| 2   | **Page hero + main generator panel** | H1 "AI Scientific Figure Generator", subheadline, big textarea, "Add reference sketches or images", aspect ratio (1:1) + model select (GPT Image 2) + Generate button. Visually wrapped at `padding: 32px 112px`        |
+| 3   | **Example prompts**                  | H2 "Example prompts". 4 prompt cards: "LNP mRNA delivery graphical abstract", "Leaf cross-section with vascular bundles", "Protein interaction network with modular hubs", "Microservice topology with async messaging" |
+| 4   | **Recommended for You**              | H2 "Recommended for You" — personalized grid; skip in clone (no backend)                                                                                                                                                |
+| 5   | **How to Create (4 steps)**          | H2 "How to Create Scientific Figures with FigPad". Cards: 1Choose / 2Describe / 3Generate / 4Export. Padding: 80px 0px 56px                                                                                             |
+| 6   | **AI Scientific Figure Generator**   | Feature grid covers text-to-image, sketch-to-figure, reference-image guidance, and original image download. Padding: 64px 0px                                                                                           |
+| 7   | **FAQ**                              | H2 "AI Scientific Figure Generator FAQ". 6 Q&A accordion items                                                                                                                                                          |
+| 8   | **Footer**                           | Standard footer                                                                                                                                                                                                         |
 
 ## Interaction model
 
 - Static content + scroll. No scroll-driven animations detected on initial load.
-- Tab bar at top is click-driven (switches between "By Text" / "By Sketch" / "By Img" / "SVG Editor").
+- Tab bar at top is click-driven (switches between "By Text" / "By Sketch" / "By Img").
 - FAQ is click-driven accordion.
 
 ## Color palette (sampled)

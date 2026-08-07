@@ -2,24 +2,10 @@
 
 import { useState } from 'react';
 import { formatElapsed } from '@/routes/generate/-state';
-import {
-  Check,
-  ChevronDown,
-  Copy,
-  Download,
-  RefreshCw,
-  Sparkles,
-  Star,
-} from 'lucide-react';
+import { Check, Copy, Download, RefreshCw, Sparkles, Star } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
-
-const EXPORT_FORMATS = [
-  { id: 'png', label: 'PNG', mime: 'image/png', ext: '.png' },
-  { id: 'svg', label: 'SVG (vector)', mime: 'image/svg+xml', ext: '.svg' },
-  { id: 'pdf', label: 'PDF', mime: 'application/pdf', ext: '.pdf' },
-] as const;
 
 export function GenerationResult({
   image,
@@ -38,7 +24,6 @@ export function GenerationResult({
   onRegenerate: () => void;
   onUseAsReference: () => void;
 }) {
-  const [exportOpen, setExportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [rated, setRated] = useState<'up' | 'down' | null>(null);
 
@@ -76,46 +61,20 @@ export function GenerationResult({
         </div>
       </div>
 
-      {/* Action bar — download dropdown, regenerate, use as reference, rate. */}
+      {/* Action bar — download, regenerate, use as reference, rate. */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-white px-3 py-2">
         <div className="flex items-center gap-1.5">
-          {/* Export dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setExportOpen((v) => !v)}
-              aria-label="Export"
-              aria-expanded={exportOpen}
-              className={cn(
-                buttonVariants({ variant: 'outline', size: 'sm' }),
-                'gap-1 rounded-full'
-              )}
-            >
-              <Download className="size-3.5" />
-              Export
-              <ChevronDown className="size-3 opacity-50" />
-            </button>
-            {exportOpen && (
-              <div className="absolute bottom-full left-0 z-20 mb-1 w-40 overflow-hidden rounded-lg border bg-white shadow-lg">
-                {EXPORT_FORMATS.map((fmt) => (
-                  <button
-                    key={fmt.id}
-                    type="button"
-                    onClick={() => {
-                      // Mock download — just opens the data URL in a new tab.
-                      // Real implementation would POST to /api/export with the
-                      // format id and stream the binary back.
-                      window.open(image.src, '_blank');
-                      setExportOpen(false);
-                    }}
-                    className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
-                  >
-                    {fmt.label}
-                  </button>
-                ))}
-              </div>
+          <a
+            href={image.src}
+            download={image.name}
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'sm' }),
+              'gap-1 rounded-full'
             )}
-          </div>
+          >
+            <Download className="size-3.5" />
+            Download image
+          </a>
 
           <button
             type="button"

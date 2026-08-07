@@ -16,18 +16,18 @@ import {
  * @docs https://pay.weixin.qq.com/doc/v3/merchant/4012791858
  */
 export interface WechatPayConfigs extends PaymentConfigs {
-  appId: string; // 公众号/小程序 AppID
-  mchId: string; // 商户号
-  apiV3Key: string; // APIv3 密钥 (32 bytes)
-  privateKey: string; // 商户API私钥 (PEM)
-  serialNo: string; // 商户API证书序列号
-  notifyUrl?: string; // 支付结果通知 URL
-  platformCert?: string; // 平台证书 PEM (用于 webhook 签名验证) — required for notify
+  appId: string; // Official account / mini-program AppID
+  mchId: string; // Merchant ID
+  apiV3Key: string; // APIv3 key (32 bytes)
+  privateKey: string; // Merchant API private key (PEM)
+  serialNo: string; // Merchant API certificate serial number
+  notifyUrl?: string; // Payment notification URL
+  platformCert?: string; // Platform certificate PEM, required for webhook verification
 }
 
 /**
  * WeChat Pay (Native) provider — V3 API
- * Uses Native Pay (扫码支付) to generate a QR code URL.
+ * Uses Native Pay to generate a QR code URL.
  *
  * @docs https://pay.weixin.qq.com/doc/v3/merchant/4012791858
  */
@@ -62,7 +62,7 @@ export class WechatPayProvider implements PaymentProvider {
       out_trade_no: outTradeNo,
       notify_url: this.configs.notifyUrl || '',
       amount: {
-        total: order.price.amount, // 单位：分
+        total: order.price.amount, // Unit: cents
         currency: 'CNY',
       },
       attach: order.metadata ? JSON.stringify(order.metadata) : undefined,

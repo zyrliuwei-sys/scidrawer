@@ -14,6 +14,7 @@ import {
   ChevronDown,
   History,
   Image as ImageIcon,
+  Loader2,
   Send,
   Wand2,
   X,
@@ -22,6 +23,12 @@ import { toast } from 'sonner';
 
 import { apiGet, apiPost, apiPostForm } from '@/lib/api-client';
 import { getUuid } from '@/lib/hash';
+import {
+  calculateImageCreditCost,
+  resolveImageBillingResolution,
+} from '@/lib/image-credit-cost';
+import { cn } from '@/lib/utils';
+import { useImagePreview } from '@/hooks/use-image-preview';
 import {
   Sidebar,
   SidebarBody,
@@ -76,9 +83,9 @@ const MODELS = [
 // the main work area; Settings / Logout / Sign-in live outside the
 // workspace chrome.
 const NAV_LINKS = [
-  { label: '生成器', href: '/generate', icon: <Wand2 className="size-5" /> },
+  { label: 'Generator', href: '/generate', icon: <Wand2 className="size-5" /> },
   {
-    label: '历史记录',
+    label: 'History',
     href: '#generation-history',
     icon: <History className="size-5" />,
   },
@@ -87,52 +94,53 @@ const NAV_LINKS = [
 const HISTORY_PAGE_SIZE = 24;
 
 const HISTORY_PANEL_COPY: ImageHistoryCopy = {
-  imageCounter: (current, total) => `第 ${current} / ${total} 张`,
-  imageTotal: (total) => `共 ${total} 张`,
-  download: '下载图片',
-  expand: '展开预览面板',
-  restore: '恢复预览面板宽度',
-  close: '关闭历史记录',
-  gallery: '全部图片',
-  preview: '返回预览',
-  clear: '清空图片',
-  searchPlaceholder: '搜索提示词',
-  allModels: '全部模型',
-  allAspects: '全部比例',
-  today: '今天',
-  yesterday: '昨天',
-  earlier: '更早记录',
-  untitled: '未命名科研图',
-  noMatches: '没有符合条件的历史图片',
-  loadMore: '加载更多',
-  loadingMore: '正在加载',
-  generated: '生成图片',
-  references: (count) => `${count} 张参考图`,
-  loading: '正在加载图片预览…',
-  unavailable: '图片暂时无法预览',
-  dateLocale: 'zh-CN',
+  imageCounter: (current, total) => `${current} of ${total}`,
+  imageTotal: (total) => `${total} images`,
+  download: 'Download image',
+  expand: 'Expand preview panel',
+  restore: 'Reset preview width',
+  close: 'Close history',
+  gallery: 'All images',
+  preview: 'Back to preview',
+  clear: 'Clear images',
+  searchPlaceholder: 'Search prompts',
+  allModels: 'All models',
+  allAspects: 'All sizes',
+  today: 'Today',
+  yesterday: 'Yesterday',
+  earlier: 'Earlier',
+  untitled: 'Untitled scientific figure',
+  noMatches: 'No matching images',
+  loadMore: 'Load more',
+  loadingMore: 'Loading',
+  generated: 'Generated image',
+  references: (count) => `${count} reference image${count === 1 ? '' : 's'}`,
+  loading: 'Loading image preview…',
+  unavailable: 'Image preview unavailable',
+  dateLocale: 'en-US',
 };
 
 const SESSION_COPY: GenerationSessionCopy = {
-  title: '图谱渲染会话',
-  preparing: '正在建立渲染任务',
-  rendering: '正在渲染图谱',
-  complete: '图谱已生成',
-  failed: '生成超时，点击重试',
-  prompt: '研究描述',
-  image: '图片',
-  generatingOne: '生成一张图',
-  elapsed: '已用时间',
-  stopWaiting: '不再等待',
-  close: '返回编辑',
-  retry: '重新尝试',
-  regenerate: '重新生成',
-  download: '下载图片',
-  useAsReference: '作为参考图',
-  copyPrompt: '复制描述',
-  imageUnavailable: '生成超时，点击重试',
-  imageUnavailableHint: '结果已保留在任务记录中，请稍后重试。',
-  renderingHint: '任务正在后台处理，完成后会自动显示结果。',
+  title: 'Figure generation',
+  preparing: 'Preparing generation',
+  rendering: 'Rendering figure',
+  complete: 'Figure ready',
+  failed: 'Generation timed out. Try again.',
+  prompt: 'Prompt',
+  image: 'Image',
+  generatingOne: 'Generating one image',
+  elapsed: 'Elapsed time',
+  close: 'Back to editing',
+  retry: 'Try again',
+  regenerate: 'Regenerate',
+  download: 'Download image',
+  useAsReference: 'Use as reference',
+  copyPrompt: 'Copy prompt',
+  imageUnavailable: 'Generation timed out. Try again.',
+  imageUnavailableHint:
+    'The task is saved in your history. Please try again later.',
+  renderingHint:
+    'Your image is rendering in the background and will appear automatically.',
 };
 
 type GeneratedImage = PreviewImage & {
@@ -479,9 +487,8 @@ function GeneratePage() {
   const [aspect, setAspect] = useState<(typeof IMAGE_SIZES)[number]>('1:1');
   const [resolution, setResolution] =
     useState<(typeof RESOLUTIONS)[number]>('1K');
-  // Scientific figures start in the provider's fast mode. Medium/high remain
-  // available when a user explicitly prefers fidelity over turnaround time.
-  const [quality, setQuality] = useState<(typeof QUALITIES)[number]>('low');
+  // Match the provider's balanced default and the published one-credit rate.
+  const [quality, setQuality] = useState<(typeof QUALITIES)[number]>('medium');
   const [model, setModel] =
     useState<(typeof MODELS)[number]['name']>('GPT Image 2');
   const [openParameterMenu, setOpenParameterMenu] =
@@ -500,10 +507,10 @@ function GeneratePage() {
   const [previewRetryToken, setPreviewRetryToken] = useState(0);
   // The state machine keeps the real provider task visible while it runs.
   const [genState, dispatchGen] = useReducer(generateReducer, initialState);
-  // Open the history canvas on first load so users can browse their past
-  // generations without an extra click. They can still collapse it via the
-  // toggle in the sidebar.
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  // Start with the history canvas closed so the workspace is unobstructed.
+  // It opens automatically when a preview is available (generation completes,
+  // history thumbnail clicked, etc.).
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const pollingAbortRef = useRef<AbortController | null>(null);
   const queryClient = useQueryClient();
   const historyQuery = useInfiniteQuery({
@@ -566,7 +573,7 @@ function GeneratePage() {
     queryClient.invalidateQueries({ queryKey: ['ai-image-history'] });
     clearActiveGenerationSession();
     dispatchGen({ type: 'succeed', image: newImage });
-    toast.success('图片生成完成');
+    toast.success('Image generated');
   };
 
   // Tick the timer once per second while generating — used by the
@@ -591,7 +598,7 @@ function GeneratePage() {
 
     if (Date.now() - activeSession.startedAt >= GENERATION_TIMEOUT_MS) {
       clearActiveGenerationSession();
-      toast.error('上次图谱渲染任务已超时，请重新生成。');
+      toast.error('Your previous generation timed out. Please generate again.');
       return;
     }
 
@@ -612,7 +619,7 @@ function GeneratePage() {
 
     const controller = new AbortController();
     pollingAbortRef.current = controller;
-    toast.message('已恢复正在进行的图谱渲染任务');
+    toast.message('Resumed your in-progress generation');
     void pollTask(
       activeSession.taskId,
       controller.signal,
@@ -639,7 +646,8 @@ function GeneratePage() {
     )
       .catch((error) => {
         if (controller.signal.aborted) return;
-        const message = error instanceof Error ? error.message : '图片生成失败';
+        const message =
+          error instanceof Error ? error.message : 'Image generation failed';
         // A failed terminal task cannot become healthy by refreshing the page.
         // Remove it so the next page load starts with a usable generator.
         clearActiveGenerationSession();
@@ -671,6 +679,11 @@ function GeneratePage() {
 
   const canSubmit =
     prompt.trim().length >= 3 && !isGenerating && !isUploadingReferences;
+  const generationCreditCost = calculateImageCreditCost({
+    resolution: resolveImageBillingResolution({ size: aspect, resolution }),
+    quality,
+    referenceCount: referenceImages.length,
+  });
 
   const handleReferenceImages = async (
     event: ChangeEvent<HTMLInputElement>
@@ -684,25 +697,27 @@ function GeneratePage() {
       (file) => !REFERENCE_IMAGE_TYPES.has(file.type)
     );
     if (unsupportedFile) {
-      toast.error('参考图仅支持 JPG、PNG、WebP 或 GIF 格式。');
+      toast.error('Reference images must be JPG, PNG, WebP, or GIF.');
       return;
     }
     const oversizedFile = selectedFiles.find(
       (file) => file.size > REFERENCE_IMAGE_MAX_BYTES
     );
     if (oversizedFile) {
-      toast.error('参考图大小不能超过 10MB。');
+      toast.error('Reference images must be smaller than 10MB.');
       return;
     }
 
     const remainingSlots = 16 - referenceImages.length;
     if (remainingSlots <= 0) {
-      toast.error('最多可添加 16 张参考图');
+      toast.error('You can add up to 16 reference images.');
       return;
     }
     const files = selectedFiles.slice(0, remainingSlots);
     if (files.length < selectedFiles.length) {
-      toast.message(`仅上传前 ${remainingSlots} 张参考图`);
+      toast.message(
+        `Only the first ${remainingSlots} reference images were uploaded.`
+      );
     }
 
     const form = new FormData();
@@ -719,7 +734,7 @@ function GeneratePage() {
       );
       if (publiclyReachable.length !== uploaded.results.length) {
         toast.error(
-          '参考图需要可公开访问的 URL。请在后台「Storage」配置 R2 Public Domain。'
+          'Reference images need a publicly accessible URL. Configure an R2 Public Domain in Admin → Storage.'
         );
       }
       if (publiclyReachable.length > 0) {
@@ -731,10 +746,14 @@ function GeneratePage() {
             url: image.url,
           })),
         ]);
-        toast.success(`已上传 ${publiclyReachable.length} 张参考图`);
+        toast.success(
+          `Uploaded ${publiclyReachable.length} reference image${publiclyReachable.length === 1 ? '' : 's'}`
+        );
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '参考图上传失败');
+      toast.error(
+        error instanceof Error ? error.message : 'Reference upload failed'
+      );
     } finally {
       setIsUploadingReferences(false);
     }
@@ -813,7 +832,8 @@ function GeneratePage() {
       });
     } catch (error) {
       if (controller.signal.aborted) return;
-      const message = error instanceof Error ? error.message : '图片生成失败';
+      const message =
+        error instanceof Error ? error.message : 'Image generation failed';
       clearActiveGenerationSession();
       dispatchGen({
         type: 'fail',
@@ -828,17 +848,6 @@ function GeneratePage() {
     }
   };
 
-  // EvoLink's documented task API does not expose a cancellation endpoint.
-  // This stops client polling while the provider task remains recorded.
-  const handleCancel = () => {
-    pollingAbortRef.current?.abort();
-    pollingAbortRef.current = null;
-    clearActiveGenerationSession();
-    setIsGenerating(false);
-    dispatchGen({ type: 'cancel' });
-    toast.message('已停止等待。任务仍会保留在服务端记录中。');
-  };
-
   const selectPreviewImage = (id: string) => {
     setActiveImageId(id);
   };
@@ -846,7 +855,7 @@ function GeneratePage() {
   const useGeneratedImageAsReference = (image: PreviewImage) => {
     const sourceUrl = image.sourceUrl;
     if (!sourceUrl || !/^https?:\/\//i.test(sourceUrl)) {
-      toast.error('这张图片目前无法作为公开参考图使用。');
+      toast.error('This image is not available as a public reference image.');
       return;
     }
     setReferenceImages((current) =>
@@ -863,14 +872,16 @@ function GeneratePage() {
     );
     dispatchGen({ type: 'reset' });
     setIsPanelOpen(true);
-    toast.success('已添加为下一次生成的参考图');
+    toast.success('Added as a reference for your next generation');
   };
 
   const copyCurrentPrompt = () => {
     void navigator.clipboard
       ?.writeText(prompt)
-      .then(() => toast.success('描述已复制'))
-      .catch(() => toast.error('无法复制描述，请手动复制。'));
+      .then(() => toast.success('Prompt copied'))
+      .catch(() =>
+        toast.error('Unable to copy the prompt. Please copy it manually.')
+      );
   };
 
   const restartGeneration = () => {
@@ -881,7 +892,7 @@ function GeneratePage() {
 
   const retryGeneratedPreview = () => {
     setPreviewRetryToken(Date.now());
-    toast.message('正在重新加载图片预览…');
+    toast.message('Reloading image preview…');
   };
 
   const openHistoryPanel = () => {
@@ -967,18 +978,18 @@ function GeneratePage() {
             ) : (
               <History className="size-4" />
             )}
-            {isPanelOpen ? '关闭历史' : '历史记录'}
+            {isPanelOpen ? 'Close history' : 'History'}
           </Button>
         </div>
         <section className="bg-background min-h-screen overflow-hidden">
           {/* Page title and subtitle */}
-          <div className="mx-auto w-full max-w-[980px] px-4 pt-16 pb-6 text-center md:pt-64 xl:pt-72">
+          <div className="mx-auto w-full max-w-[980px] px-4 pt-20 pb-6 text-center md:pt-48 xl:pt-56">
             <h1 className="text-[36px] leading-[45px] font-semibold text-slate-900">
               AI Scientific Figure Generator
             </h1>
             <p className="mx-auto mt-4 text-sm text-[#415365]">
               Use SciDrawer AI as a scientific diagram maker for research
-              visuals you can edit, vectorize, and export.
+              visuals you can refine and export.
             </p>
           </div>
 
@@ -998,36 +1009,42 @@ function GeneratePage() {
                   onChange={handleReferenceImages}
                 />
 
-                <Textarea
-                  rows={6}
-                  placeholder="描述一张科研图,例如:线粒体超微结构图,标注 cristae 和 mtDNA…"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  className="min-h-[128px] resize-none rounded-none border-0 bg-white px-5 pt-4 pb-4 text-base shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
-
-                {referenceImages.length > 0 && (
-                  <div className="flex flex-wrap gap-2 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5">
-                    {referenceImages.map((image) => (
-                      <span
-                        key={image.id}
-                        className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pr-1 pl-2.5 text-xs text-slate-600 shadow-sm"
-                      >
-                        <ImageIcon className="size-3.5 shrink-0 text-slate-500" />
-                        <span className="max-w-44 truncate">{image.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeReferenceImage(image.id)}
-                          aria-label={`移除参考图 ${image.name}`}
-                          title="移除参考图"
-                          className="flex size-5 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                <div className="relative">
+                  {referenceImages.length > 0 && (
+                    <div className="absolute top-4 left-5 z-10 flex max-w-[calc(100%-2.5rem)] gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {referenceImages.map((image) => (
+                        <div
+                          key={image.id}
+                          className="group/reference relative size-[76px] shrink-0 overflow-visible rounded-xl bg-slate-100 shadow-[0_3px_10px_rgba(15,23,42,0.14)]"
                         >
-                          <X className="size-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+                          <ReferenceImagePreview
+                            name={image.name}
+                            url={image.url}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeReferenceImage(image.id)}
+                            aria-label={`Remove reference image ${image.name}`}
+                            title="Remove reference image"
+                            className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-sm transition-transform hover:scale-110 hover:bg-slate-950 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                          >
+                            <X className="size-3" strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Textarea
+                    rows={6}
+                    placeholder="Describe a scientific figure, e.g. a mitochondrial ultrastructure with cristae and mtDNA labels…"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className={cn(
+                      'min-h-[128px] resize-none rounded-none border-0 bg-white px-5 pb-4 text-base shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
+                      referenceImages.length > 0 ? 'pt-[108px]' : 'pt-4'
+                    )}
+                  />
+                </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                   <div className="flex flex-wrap items-center gap-2">
@@ -1081,7 +1098,7 @@ function GeneratePage() {
                       }
                     >
                       <DropdownMenuTrigger
-                        aria-label="选择分辨率"
+                        aria-label="Select resolution"
                         className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
                       >
                         <span className="font-medium">{resolution}</span>
@@ -1113,7 +1130,7 @@ function GeneratePage() {
                       }
                     >
                       <DropdownMenuTrigger
-                        aria-label="选择生成质量"
+                        aria-label="Select generation quality"
                         className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
                       >
                         <span className="font-medium capitalize">
@@ -1149,7 +1166,7 @@ function GeneratePage() {
                       }
                     >
                       <DropdownMenuTrigger
-                        aria-label="选择生成模型"
+                        aria-label="Select generation model"
                         title={`Model: ${model}`}
                         className="flex h-8 w-auto items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-600 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
                       >
@@ -1180,8 +1197,8 @@ function GeneratePage() {
                       type="button"
                       onClick={handleSubmit}
                       disabled={!canSubmit}
-                      aria-label="生成"
-                      title="生成"
+                      aria-label="Generate"
+                      title="Generate"
                       className="size-10 rounded-[12px] bg-slate-700 p-0 text-white shadow-[0_10px_24px_rgba(30,38,47,0.18)] hover:bg-slate-800"
                     >
                       <Send className="size-4" />
@@ -1213,7 +1230,6 @@ function GeneratePage() {
                     : undefined
                 }
                 copy={SESSION_COPY}
-                onStopWaiting={handleCancel}
                 onClose={() => dispatchGen({ type: 'reset' })}
                 onRetry={retryGeneratedPreview}
                 onRegenerate={restartGeneration}
@@ -1230,7 +1246,7 @@ function GeneratePage() {
       </main>
 
       <ImagePreviewPanel
-        title="历史记录"
+        title="History"
         copy={HISTORY_PANEL_COPY}
         open={isPanelOpen}
         images={previewImages}
@@ -1246,8 +1262,10 @@ function GeneratePage() {
         onSelect={selectPreviewImage}
         emptyState={
           <div className="flex max-w-[18rem] flex-col items-center gap-2 text-center text-sm text-slate-500">
-            <span className="font-medium text-slate-700">还没有生成记录</span>
-            <span>完成的科研图片会自动保存并展示在这里。</span>
+            <span className="font-medium text-slate-700">
+              No generations yet
+            </span>
+            <span>Your completed scientific figures will be saved here.</span>
           </div>
         }
       />
@@ -1265,7 +1283,7 @@ export const Route = createFileRoute('/generate')({
   component: GeneratePage,
   head: () => ({
     meta: [
-      { title: '科研图片生成器 | SciDrawer AI' },
+      { title: 'Scientific Figure Generator | SciDrawer AI' },
       {
         name: 'description',
         content:
@@ -1274,3 +1292,66 @@ export const Route = createFileRoute('/generate')({
     ],
   }),
 });
+
+/**
+ * Loads a reference image through the api-client instead of a raw <img src>.
+ * In Vite dev, `/api/...` is intercepted as a static lookup and 404s before
+ * the route runs, so a plain <img src> would always show the broken icon.
+ * `useImagePreview` fetches the bytes with the API client and exposes a
+ * blob URL the browser can render.
+ */
+function ReferenceImagePreview({ name, url }: { name: string; url: string }) {
+  // Public R2 assets are intentionally rendered by the browser as ordinary
+  // images. Fetching them first to make a Blob URL would require a CORS
+  // response header, while an <img> element can safely display the same
+  // public resource without it.
+  if (/^https?:\/\//i.test(url)) {
+    return (
+      <img
+        src={url}
+        alt={`Reference image: ${name}`}
+        className="size-full rounded-xl border border-slate-200 bg-white object-cover"
+      />
+    );
+  }
+
+  return <ProtectedReferenceImagePreview name={name} url={url} />;
+}
+
+function ProtectedReferenceImagePreview({
+  name,
+  url,
+}: {
+  name: string;
+  url: string;
+}) {
+  const { objectUrl, status } = useImagePreview(url);
+
+  if (status === 'error') {
+    return (
+      <div
+        aria-label={`Reference image unavailable: ${name}`}
+        className="flex size-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400"
+      >
+        <ImageIcon className="size-5" />
+      </div>
+    );
+  }
+  if (!objectUrl) {
+    return (
+      <div
+        aria-label={`Loading reference image: ${name}`}
+        className="flex size-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-400"
+      >
+        <Loader2 className="size-5 animate-spin" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={objectUrl}
+      alt={`Reference image: ${name}`}
+      className="size-full rounded-xl border border-slate-200 bg-white object-cover"
+    />
+  );
+}

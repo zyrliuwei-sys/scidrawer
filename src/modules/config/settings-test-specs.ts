@@ -111,7 +111,7 @@ export const testSpecs: Record<string, TestSpec> = {
     fields: [
       {
         name: 'amount',
-        label: 'Amount (分)',
+        label: 'Amount (cents)',
         type: 'number',
         defaultValue: '1',
         required: true,
@@ -129,7 +129,7 @@ export const testSpecs: Record<string, TestSpec> = {
     fields: [
       {
         name: 'amount',
-        label: 'Amount (分)',
+        label: 'Amount (cents)',
         type: 'number',
         defaultValue: '1',
         required: true,

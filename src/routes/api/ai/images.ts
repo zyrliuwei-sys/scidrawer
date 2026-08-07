@@ -16,6 +16,10 @@ import {
 import { getAllConfigs, type ConfigMap } from '@/modules/config/service';
 import { getStorage } from '@/modules/storage/service';
 import { extractStoredImageUrls } from '@/lib/ai-image-results';
+import {
+  calculateImageCreditCost,
+  resolveImageBillingResolution,
+} from '@/lib/image-credit-cost';
 import { imageQueue } from '@/lib/queue';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 import { respData, respErr } from '@/lib/resp';
@@ -33,19 +37,6 @@ const RATIO_SIZES = new Set([
 ]);
 const RESOLUTIONS = new Set(['1K', '2K', '4K']);
 const QUALITIES = new Set(['low', 'medium', 'high']);
-
-/**
- * Credit cost per generated image, keyed by output resolution. Aligned with
- * the upstream API price ratio (1K $0.05, 2K $0.15, 4K $0.45 → 1 : 3 : 9) and
- * with the credit allocations shipped in pay-as-you-go plans — a 1K pack
- * sells 10 credits for 10 images at the 1K resolution, a 2K pack sells 30
- * credits for 10 images at the 2K resolution, and so on.
- */
-const CREDIT_COST_BY_RESOLUTION: Record<string, number> = {
-  '1K': 1,
-  '2K': 3,
-  '4K': 9,
-};
 
 type ImageGenerationRequest = {
   prompt?: unknown;
@@ -133,20 +124,25 @@ async function POST({ request }: { request: Request }) {
     if ('error' in validation) return respErr(validation.error);
 
     const provider = await createEvolinkProvider(configs);
-    const perImageCost =
-      CREDIT_COST_BY_RESOLUTION[validation.options.resolution] ?? 1;
+    const costCredits = calculateImageCreditCost({
+      resolution: resolveImageBillingResolution({
+        size: validation.options.size,
+        resolution: validation.options.resolution,
+      }),
+      quality: validation.options.quality,
+      referenceCount: validation.options.image_urls?.length ?? 0,
+      count: validation.count,
+    });
     const task = await createTask({
       userId: session.user.id,
       mediaType: AIMediaType.IMAGE,
       provider: provider.name,
       model: EVOLINK_GPT_IMAGE_2_MODEL,
       prompt: validation.prompt,
-      // Charge by output resolution (1 credit per 1K image, 3 per 2K, 9 per
-      // 4K) multiplied by the number of images requested. Matches the upstream
-      // API price ratio and the credit allocations baked into the
-      // pay-as-you-go plans. Refunded automatically if the provider task
-      // later fails (see `revoke()` in @/modules/credits).
-      costCredits: perImageCost * validation.count,
+      // The price scales with quality, pixel tier, reference inputs, and the
+      // requested output count. Credits are refunded automatically if the
+      // provider task later fails (see `revoke()` in @/modules/credits).
+      costCredits,
       options: validation.options,
     });
 
@@ -294,41 +290,41 @@ function validateRequest(
   | { prompt: string; count: number; options: EvolinkImageOptions }
   | { error: string } {
   const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
-  if (!prompt) return { error: '描述不能为空' };
+  if (!prompt) return { error: 'A prompt is required' };
   if ([...prompt].length > 32_000) {
-    return { error: '描述不能超过 32,000 个字符' };
+    return { error: 'The prompt cannot exceed 32,000 characters' };
   }
   if (body.model !== undefined && body.model !== EVOLINK_GPT_IMAGE_2_MODEL) {
-    return { error: '当前仅支持 gpt-image-2 模型' };
+    return { error: 'Only the gpt-image-2 model is supported' };
   }
 
   const size = typeof body.size === 'string' ? body.size : 'auto';
-  if (!isValidSize(size)) return { error: '图片尺寸无效' };
+  if (!isValidSize(size)) return { error: 'Invalid image size' };
 
   const resolution =
     typeof body.resolution === 'string' ? body.resolution : '1K';
-  if (!RESOLUTIONS.has(resolution)) return { error: '分辨率无效' };
+  if (!RESOLUTIONS.has(resolution)) return { error: 'Invalid resolution' };
 
   const quality = typeof body.quality === 'string' ? body.quality : 'medium';
-  if (!QUALITIES.has(quality)) return { error: '生成质量参数无效' };
+  if (!QUALITIES.has(quality)) return { error: 'Invalid generation quality' };
 
   const n = body.n === undefined ? 1 : Number(body.n);
   if (!Number.isInteger(n) || n < 1 || n > 10) {
-    return { error: '一次最多可生成 1-10 张图片' };
+    return { error: 'Generate between 1 and 10 images at a time' };
   }
 
-  const imageUrls = validateUrls(body.image_urls, 16, '参考图');
+  const imageUrls = validateUrls(body.image_urls, 16, 'reference images');
   if ('error' in imageUrls) return imageUrls;
   if (usesPrivateR2Url(imageUrls.urls, configs)) {
     return {
       error:
-        '参考图必须使用可公开访问的 URL，请在「管理后台 → 存储」配置 R2 公开域名后重新上传',
+        'Reference images require a publicly accessible URL. Configure an R2 Public Domain in Admin → Storage, then upload again.',
     };
   }
   const maskUrl = validateOptionalUrl(body.mask_url, 'mask URL');
   if ('error' in maskUrl) return maskUrl;
   if (maskUrl.url && imageUrls.urls.length === 0) {
-    return { error: '使用蒙版时必须至少上传一张参考图' };
+    return { error: 'A mask requires at least one reference image' };
   }
 
   return {
@@ -417,7 +413,7 @@ function validateUrls(
 ): { urls: string[] } | { error: string } {
   if (input === undefined) return { urls: [] };
   if (!Array.isArray(input) || input.length > max) {
-    return { error: `最多可上传 ${max} 张${label}` };
+    return { error: `You can upload up to ${max} ${label}` };
   }
 
   const urls: string[] = [];
@@ -434,29 +430,26 @@ function validateOptionalUrl(
   label: string
 ): { url?: string } | { error: string } {
   if (value === undefined || value === null || value === '') return {};
-  if (typeof value !== 'string') return { error: `${label}无效` };
+  if (typeof value !== 'string') return { error: `Invalid ${label}` };
   try {
     const url = new URL(value);
     if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-      return { error: `${label}协议必须为 http 或 https` };
+      return { error: `${label} must use http or https` };
     }
     return { url: url.href };
   } catch {
-    return { error: `${label}格式无效` };
+    return { error: `Invalid ${label} format` };
   }
 }
 
 function errorMessage(error: unknown): string {
-  if (!(error instanceof Error)) return '图片生成失败';
-  // Translate server-side credit / validation messages so the toast shown in
-  // the browser matches the product's zh / en copy. The original English is
-  // kept as a fallback for any error we haven't translated yet.
+  if (!(error instanceof Error)) return 'Image generation failed';
   if (error.message === 'Insufficient credits')
-    return '积分不足，请购买积分包后再试';
-  if (error.message === 'Task not found') return '任务未找到';
-  if (error.message === 'Image task not found') return '图片任务未找到';
+    return 'Insufficient credits. Please purchase more credits and try again.';
+  if (error.message === 'Task not found') return 'Task not found';
+  if (error.message === 'Image task not found') return 'Image task not found';
   if (error.message === 'Image task is missing its provider ID') {
-    return '图片任务缺少 provider ID';
+    return 'Image task is missing its provider ID';
   }
-  return error.message || '图片生成失败';
+  return error.message || 'Image generation failed';
 }

@@ -31,15 +31,13 @@
 2. **Nav items** (h-30, rounded-lg, px-3, w-296):
    - `Generate Figure` — ACTIVE (`bg-#ededed`, text-slate-900)
    - `Generate Poster` — inactive (text-#5f6774, hover bg-#ededed)
-   - `SVG Converter` — inactive
-   - `SVG Editor` — inactive
 3. **History** button (h-30, text-12px, text-#5f6774)
 4. **Sign In** button (h-48, full-width, w-296, "Free" badge in upper-right)
 
 ## Top control row (inside main section)
 
 - **Tab pills** (left, h-32, font-11px, rounded-full, gap-1, p-1, bg-card):
-  - By Text / By Sketch / By Img / SVG Editor
+  - By Text / By Sketch / By Img
   - Active state: `bg-foreground text-background`
   - Inactive: `text-muted-foreground hover:text-foreground`
 - **Action buttons** (right, gap-2):
@@ -91,47 +89,47 @@
 | --- | -------- | ------------------------------------------------------------------------------------------------------------------- |
 | 1   | Choose   | Pick how you want to create your scientific figure — text prompt, rough sketch, or reference image to guide the AI. |
 | 2   | Describe | Add details such as the research topic, biological pathway, molecular mechanism, or experimental workflow.          |
-| 3   | Generate | SciDrawer AI produces a scientific illustration you can refine, restyle, and adapt to your manuscript.              |
-| 4   | Export   | Review the figure, adjust labels, and export as PNG, SVG, or PPTX for papers, posters, and presentations.           |
+| 3   | Generate | SciDrawer AI produces a scientific illustration you can regenerate and adapt to your manuscript.                    |
+| 4   | Download | Review the figure, regenerate when needed, and download the original image for papers, posters, and presentations.  |
 
 ## Features (grid-cols-2, gap-6)
 
-H2: "AI Diagram Generator, Editor, and Vectorizer"
-Subtitle: "Use SciDrawer AI to generate scientific figures, edit labels, convert PNG to SVG, and turn images into editable vectors in one workspace."
+H2: "AI Scientific Figure Generator"
+Subtitle: "Use SciDrawer AI to generate scientific figures from text, sketches, and reference images in one workspace."
 4 feature blocks:
 
 1. Generate Scientific Diagrams
-2. Edit Scientific Figure Text Online
-3. Image to SVG converter
-4. Export your figures in the format you need
+2. Sketch-to-figure generation
+3. Reference-image guidance
+4. Original image download
 
 ## FAQ (Accordion, single collapsible)
 
 H2: "AI Scientific Figure Generator FAQ"
-6 Q&A items (verbatim from figpad):
+6 Q&A items:
 
-1. **What image formats can I export?**
-   You can export raster images such as PNG or JPG for quick use in manuscripts and slides, download SVG for editable vector work, and use PPTX export when you need a presentation-ready file.
+1. **How can I use generated figures?**
+   Download the original generated image and place it in manuscripts, slides, or posters according to the file requirements of your publication or institution.
 2. **Can I use SciDrawer AI for free?**
    Yes. You can start for free and use SciDrawer AI as an AI figure generator or scientific diagram maker before upgrading for more credits, exports, or higher-volume workflows.
 3. **What images can I upload?**
    You can upload PNG, JPG, and WebP reference images, sketches, screenshots, existing diagrams, and simple illustrations.
 4. **Do I own copyright and can I use the images for journal publications?**
    Under the SciDrawer AI Terms, you keep ownership of your content and, to the maximum extent permitted by law, own the outputs generated for you. You are responsible for verifying scientific accuracy before publication.
-5. **Is SciDrawer AI the best AI diagram generator for science figures?**
-   SciDrawer AI is built for researchers who need more than a generic AI diagram generator — it combines an AI scientific figure generator, flow diagram generator, science diagram maker, SVG conversion, and editing tools in one workspace.
+5. **What makes SciDrawer AI useful for science figures?**
+   SciDrawer AI is built for researchers who need text-to-image generation, sketch inputs, reference-image guidance, and flexible image resolution in one workspace.
 6. **Is my research data secure?**
    SciDrawer AI is designed for private research workflows — your prompts, uploads, and generated figures stay in your workspace unless you choose to share them. Do not upload confidential or regulated research data unless your institution allows it.
 
 ## States & behaviors
 
-### Top tab pills (By Text / By Sketch / By Img / SVG Editor)
+### Top tab pills (By Text / By Sketch / By Img)
 
 - **Click:** switches activeMode (UI-only; no input-mode swap)
 
 ### Sidebar nav
 
-- **Click Generate Figure / Poster / SVG Converter / SVG Editor:** UI switches activePage; current page renders the same content (UI-only nav)
+- **Click Generate Figure / Poster:** UI switches activePage; current page renders the same content (UI-only nav)
 
 ### Top buttons (+ New Dialogue / New / Paper to Poster)
 

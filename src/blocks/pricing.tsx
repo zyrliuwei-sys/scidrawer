@@ -59,20 +59,47 @@ export function Pricing({ title }: { title?: string } = {}) {
   );
 
   const starterFeatures = [
-    { icon: ImageIcon, label: m['landing.pricing.f_45_figures']() },
+    { icon: ImageIcon, label: m['landing.pricing.f_612_credits']() },
+    { icon: Sparkles, label: m['landing.pricing.f_credit_rate']() },
     { icon: LayoutGrid, label: m['landing.pricing.f_library']() },
-    { icon: Download, label: m['landing.pricing.f_png']() },
     { icon: Languages, label: m['landing.pricing.f_bilingual']() },
   ];
   const proFeatures = [
-    { icon: ImageIcon, label: m['landing.pricing.f_115_figures']() },
+    { icon: ImageIcon, label: m['landing.pricing.f_1564_credits']() },
+    { icon: Sparkles, label: m['landing.pricing.f_credit_rate']() },
     { icon: LayoutGrid, label: m['landing.pricing.f_library']() },
     { icon: PenLine, label: m['landing.pricing.f_sketch']() },
     { icon: Layers, label: m['landing.pricing.f_reference']() },
     { icon: Zap, label: m['landing.pricing.f_priority']() },
   ];
   const labFeatures = [
-    { icon: ImageIcon, label: m['landing.pricing.f_240_figures']() },
+    { icon: ImageIcon, label: m['landing.pricing.f_3264_credits']() },
+    { icon: Sparkles, label: m['landing.pricing.f_credit_rate']() },
+    { icon: LayoutGrid, label: m['landing.pricing.f_library']() },
+    { icon: PenLine, label: m['landing.pricing.f_sketch']() },
+    { icon: Layers, label: m['landing.pricing.f_reference']() },
+    { icon: Wand2, label: m['landing.pricing.f_batch']() },
+    { icon: Scissors, label: m['landing.pricing.f_mask']() },
+    { icon: Users, label: m['landing.pricing.f_team']() },
+    { icon: Zap, label: m['landing.pricing.f_support']() },
+  ];
+  const annualStarterFeatures = [
+    { icon: ImageIcon, label: m['landing.pricing.f_7712_credits']() },
+    { icon: Sparkles, label: m['landing.pricing.f_credit_rate']() },
+    { icon: LayoutGrid, label: m['landing.pricing.f_library']() },
+    { icon: Languages, label: m['landing.pricing.f_bilingual']() },
+  ];
+  const annualProFeatures = [
+    { icon: ImageIcon, label: m['landing.pricing.f_19707_credits']() },
+    { icon: Sparkles, label: m['landing.pricing.f_credit_rate']() },
+    { icon: LayoutGrid, label: m['landing.pricing.f_library']() },
+    { icon: PenLine, label: m['landing.pricing.f_sketch']() },
+    { icon: Layers, label: m['landing.pricing.f_reference']() },
+    { icon: Zap, label: m['landing.pricing.f_priority']() },
+  ];
+  const annualLabFeatures = [
+    { icon: ImageIcon, label: m['landing.pricing.f_41127_credits']() },
+    { icon: Sparkles, label: m['landing.pricing.f_credit_rate']() },
     { icon: LayoutGrid, label: m['landing.pricing.f_library']() },
     { icon: PenLine, label: m['landing.pricing.f_sketch']() },
     { icon: Layers, label: m['landing.pricing.f_reference']() },
@@ -82,20 +109,23 @@ export function Pricing({ title }: { title?: string } = {}) {
     { icon: Zap, label: m['landing.pricing.f_support']() },
   ];
   const paygStarterFeatures = [
-    { icon: ImageIcon, label: m['landing.pricing.f_50_figures']() },
+    { icon: ImageIcon, label: m['landing.pricing.f_340_credits']() },
+    { icon: Sparkles, label: m['landing.pricing.f_credit_rate']() },
     { icon: LayoutGrid, label: m['landing.pricing.f_library']() },
     { icon: Download, label: m['landing.pricing.f_png']() },
     { icon: Sparkles, label: m['landing.pricing.f_text2image']() },
   ];
   const paygProFeatures = [
-    { icon: ImageIcon, label: m['landing.pricing.f_200_figures']() },
+    { icon: ImageIcon, label: m['landing.pricing.f_1292_credits']() },
+    { icon: Sparkles, label: m['landing.pricing.f_credit_rate']() },
     { icon: LayoutGrid, label: m['landing.pricing.f_library']() },
     { icon: PenLine, label: m['landing.pricing.f_sketch']() },
     { icon: Layers, label: m['landing.pricing.f_reference']() },
     { icon: Zap, label: m['landing.pricing.f_priority']() },
   ];
   const paygLabFeatures = [
-    { icon: ImageIcon, label: m['landing.pricing.f_800_figures']() },
+    { icon: ImageIcon, label: m['landing.pricing.f_2652_credits']() },
+    { icon: Sparkles, label: m['landing.pricing.f_credit_rate']() },
     { icon: LayoutGrid, label: m['landing.pricing.f_library']() },
     { icon: PenLine, label: m['landing.pricing.f_sketch']() },
     { icon: Layers, label: m['landing.pricing.f_reference']() },
@@ -121,8 +151,7 @@ export function Pricing({ title }: { title?: string } = {}) {
           productName: 'Starter Credits',
           priceInCents: 500,
           currency: 'usd',
-          // 25 credits at $0.20/credit = $5 (4× upstream 1K price $0.05).
-          credits: 25,
+          credits: 340,
           creditsValidDays: 365,
         },
         {
@@ -138,7 +167,7 @@ export function Pricing({ title }: { title?: string } = {}) {
           productName: 'Pro Credits',
           priceInCents: 1900,
           currency: 'usd',
-          credits: 95,
+          credits: 1292,
           creditsValidDays: 365,
         },
         {
@@ -152,7 +181,7 @@ export function Pricing({ title }: { title?: string } = {}) {
           productName: 'Lab Credits',
           priceInCents: 3900,
           currency: 'usd',
-          credits: 195,
+          credits: 2652,
           creditsValidDays: 365,
         },
       ],
@@ -171,7 +200,7 @@ export function Pricing({ title }: { title?: string } = {}) {
           productId: 'starter_monthly',
           priceInCents: 900,
           currency: 'usd',
-          credits: 45,
+          credits: 612,
           plan: { name: 'Starter', interval: 'month', intervalCount: 1 },
         },
         {
@@ -186,7 +215,7 @@ export function Pricing({ title }: { title?: string } = {}) {
           productId: 'pro_monthly',
           priceInCents: 2300,
           currency: 'usd',
-          credits: 115,
+          credits: 1564,
           plan: { name: 'Pro', interval: 'month', intervalCount: 1 },
         },
         {
@@ -199,7 +228,7 @@ export function Pricing({ title }: { title?: string } = {}) {
           productId: 'lab_monthly',
           priceInCents: 4800,
           currency: 'usd',
-          credits: 240,
+          credits: 3264,
           plan: { name: 'Lab', interval: 'month', intervalCount: 1 },
         },
       ],
@@ -212,50 +241,53 @@ export function Pricing({ title }: { title?: string } = {}) {
           id: 'starter-yearly',
           name: m['landing.pricing.starter'](),
           description: m['landing.pricing.starter_desc'](),
-          // Yearly plans render their monthly equivalent ($7/mo) for an
-          // apples-to-apples comparison against the monthly column, while
-          // the underlying subscription still bills annually at priceInCents.
-          price: '$7',
-          originalPrice: '$9',
+          price: '$9',
           interval: 'yr',
           displayInterval: 'mo',
-          features: starterFeatures,
+          billingNote: m['landing.pricing.billed_annually']({
+            amount: '$108',
+          }),
+          features: annualStarterFeatures,
           productId: 'starter_yearly',
-          priceInCents: 8400,
+          priceInCents: 10800,
           currency: 'usd',
-          credits: 420,
+          credits: 7712,
           plan: { name: 'Starter', interval: 'year', intervalCount: 1 },
         },
         {
           id: 'pro-yearly',
           name: m['landing.pricing.pro'](),
           description: m['landing.pricing.pro_desc'](),
-          price: '$18',
-          originalPrice: '$23',
+          price: '$23',
           interval: 'yr',
           displayInterval: 'mo',
+          billingNote: m['landing.pricing.billed_annually']({
+            amount: '$276',
+          }),
           featured: true,
           badge: m['landing.pricing.popular'](),
-          features: proFeatures,
+          features: annualProFeatures,
           productId: 'pro_yearly',
-          priceInCents: 21600,
+          priceInCents: 27600,
           currency: 'usd',
-          credits: 1080,
+          credits: 19707,
           plan: { name: 'Pro', interval: 'year', intervalCount: 1 },
         },
         {
           id: 'lab-yearly',
           name: m['landing.pricing.lab'](),
           description: m['landing.pricing.lab_desc'](),
-          price: '$38',
-          originalPrice: '$48',
+          price: '$48',
           interval: 'yr',
           displayInterval: 'mo',
-          features: labFeatures,
+          billingNote: m['landing.pricing.billed_annually']({
+            amount: '$576',
+          }),
+          features: annualLabFeatures,
           productId: 'lab_yearly',
-          priceInCents: 45600,
+          priceInCents: 57600,
           currency: 'usd',
-          credits: 2280,
+          credits: 41127,
           plan: { name: 'Lab', interval: 'year', intervalCount: 1 },
         },
       ],

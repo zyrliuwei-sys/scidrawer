@@ -21,12 +21,12 @@ type CategoryKey =
 
 const CATEGORIES: { key: CategoryKey; label: string }[] = [
   { key: 'all', label: 'All' },
-  { key: 'mechanism', label: '机制示意图' },
-  { key: 'process', label: '流程示意图' },
-  { key: 'graphical', label: '图形摘要' },
-  { key: 'lab', label: '实验仪器图' },
-  { key: 'microstructure', label: '微观结构图' },
-  { key: 'network', label: '网络示意图' },
+  { key: 'mechanism', label: 'Mechanism diagrams' },
+  { key: 'process', label: 'Process diagrams' },
+  { key: 'graphical', label: 'Graphical abstracts' },
+  { key: 'lab', label: 'Lab equipment' },
+  { key: 'microstructure', label: 'Microstructures' },
+  { key: 'network', label: 'Network diagrams' },
 ];
 
 /**
@@ -36,7 +36,7 @@ const CATEGORIES: { key: CategoryKey; label: string }[] = [
  * Clicking a card opens a side-sheet modal with the full preview.
  *
  * The data is intentionally small and self-contained: it reuses the 4
- * high-fidelity SVGs from `public/imgs/showcase/` under different titles
+ * high-fidelity showcase illustrations under different titles
  * so the carousel can demonstrate the layout without external assets.
  */
 const SHOWCASE_CARDS: AppleCardData[] = [
@@ -49,7 +49,7 @@ const SHOWCASE_CARDS: AppleCardData[] = [
         <p>
           A canonical extrinsic apoptosis diagram (FasL → Fas receptor →
           Caspase-8 → Caspase-3 → Apoptosis). Generated with SciDrawer AI from a
-          single prompt and refined with the inline editor.
+          single prompt and refined through prompt iteration.
         </p>
         <p>
           Researchers use this template to map receptor-level signaling to
@@ -191,11 +191,11 @@ export function ShowcaseGallery() {
           Showcases
         </p>
         <h2 className="text-foreground mt-3 font-serif text-4xl font-semibold tracking-tight sm:text-5xl">
-          研究者用 SciDrawer AI 生成的图
+          Figures created with SciDrawer AI
         </h2>
         <p className="text-muted-foreground mt-3 max-w-2xl text-[15px] leading-relaxed">
-          浏览为论文、海报、汇报生成的示意图。按分类筛选,
-          找到适合下一篇手稿的图。
+          Explore figures for papers, posters, and presentations. Filter by
+          category to find a starting point for your next manuscript.
         </p>
       </div>
 
@@ -223,7 +223,7 @@ export function ShowcaseGallery() {
         })}
         <div className="ml-auto hidden items-center gap-2 text-[12px] text-slate-500 sm:flex">
           <Search className="size-3.5" />
-          {visibleCards.length} 张图
+          {visibleCards.length} figures
         </div>
       </div>
 
@@ -244,7 +244,7 @@ export function ShowcaseGallery() {
           </div>
         ) : (
           <p className="px-8 py-12 text-center text-[14px] text-slate-500">
-            该分类下还没有图。
+            No figures in this category yet.
           </p>
         )}
       </div>

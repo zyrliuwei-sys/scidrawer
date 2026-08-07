@@ -8,7 +8,7 @@
 
 ## Interaction model
 
-- **Top nav tabs** ("By Text" / "By Sketch" / "By Img" / "SVG Editor"): click-driven — switches input mode. NOT scroll-driven.
+- **Top nav tabs** ("By Text" / "By Sketch" / "By Img"): click-driven — switches input mode. NOT scroll-driven.
 - **"+ New Dialogue"**: click-driven — starts fresh conversation.
 - **Aspect ratio selector** (1:1): click-driven — switches dropdown.
 - **Model selector** ("GPT Image 2"): click-driven — opens dropdown.

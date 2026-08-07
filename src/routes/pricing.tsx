@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { getLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
+import { FAQ } from '@/blocks/faq';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { Pricing } from '@/blocks/pricing';
@@ -47,6 +48,7 @@ function PricingPage() {
       <Header />
       <main className="flex-1">
         <Pricing />
+        <FAQ />
       </main>
       <Footer />
     </div>

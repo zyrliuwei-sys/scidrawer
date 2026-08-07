@@ -5,7 +5,10 @@ import { createFileRoute } from '@tanstack/react-router';
 import { getAuth } from '@/core/auth';
 import { envConfigs } from '@/config';
 import { getAllConfigs } from '@/modules/config/service';
-import { getStorage } from '@/modules/storage/service';
+import {
+  createReferenceImageProxyUrl,
+  getStorage,
+} from '@/modules/storage/service';
 import { md5 } from '@/lib/hash';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 import { respData, respErr } from '@/lib/resp';
@@ -36,16 +39,6 @@ const REFERENCE_IMAGE_TYPES = new Set([
   'image/gif',
 ]);
 
-function hasPublicR2Domain(domain: string | undefined): boolean {
-  if (!domain) return false;
-  try {
-    const url = new URL(domain);
-    return url.protocol === 'https:' || url.protocol === 'http:';
-  } catch {
-    return false;
-  }
-}
-
 async function POST({ request }: { request: Request }) {
   const limited = enforceMinIntervalRateLimit(request, {
     intervalMs: 1000,
@@ -65,17 +58,33 @@ async function POST({ request }: { request: Request }) {
     const isReferenceUpload =
       new URL(request.url).searchParams.get('purpose') === 'reference';
     const storage = await getStorage();
-    // The S3-compatible R2 endpoint requires credentials. EvoLink cannot fetch
-    // files from it, so only a configured public domain is a valid reference
-    // image source for generation.
-    const publiclyAccessible = isReferenceUpload
-      ? hasPublicR2Domain((await getAllConfigs()).r2_domain)
-      : undefined;
-    if (isReferenceUpload && !publiclyAccessible) {
-      return respErr(
-        'Reference images require a public URL. Configure a valid R2 Domain in Admin → Storage before uploading.'
-      );
-    }
+    const storageConfigs = await getAllConfigs();
+    const origin = new URL(request.url).origin;
+    const makeResultUrl = async (url: string, key: string) => {
+      if (!isReferenceUpload) {
+        return { url, publiclyAccessible: undefined };
+      }
+
+      // Prefer an R2 custom domain when configured. This stays publicly
+      // reachable even while a developer is using the app on localhost.
+      if (storage && hasPublicHttpUrl(storageConfigs.r2_domain)) {
+        const publicUrl = storage.getPublicUrl({ key });
+        if (publicUrl) return { url: publicUrl, publiclyAccessible: true };
+      }
+
+      // Without an R2 custom domain, a private bucket can still be exposed
+      // through a one-hour signed app URL — but only when this app itself has
+      // a public origin. An upstream provider can never fetch localhost.
+      const proxyUrl = storage
+        ? await createReferenceImageProxyUrl({ origin, key })
+        : new URL(url, origin).toString();
+      if (!proxyUrl || !isPubliclyReachableUrl(proxyUrl)) {
+        throw new Error(
+          'Reference images require a publicly accessible URL. Configure an R2 Public Domain in Admin → Storage, then upload again.'
+        );
+      }
+      return { url: proxyUrl, publiclyAccessible: true };
+    };
     const uploadResults: Array<{
       url: string;
       key: string;
@@ -125,12 +134,16 @@ async function POST({ request }: { request: Request }) {
         const dir = path.join(process.cwd(), 'public', 'uploads');
         await mkdir(dir, { recursive: true });
         await writeFile(path.join(dir, objectKey), body);
+        const resultUrl = await makeResultUrl(
+          `/uploads/${objectKey}`,
+          objectKey
+        );
         uploadResults.push({
-          url: `/uploads/${objectKey}`,
+          url: resultUrl.url,
           key: `uploads/${objectKey}`,
           filename: file.name,
           deduped: false,
-          publiclyAccessible,
+          publiclyAccessible: resultUrl.publiclyAccessible,
         });
         continue;
       }
@@ -139,12 +152,13 @@ async function POST({ request }: { request: Request }) {
       if (exists) {
         const publicUrl = storage.getPublicUrl({ key: objectKey });
         if (publicUrl) {
+          const resultUrl = await makeResultUrl(publicUrl, objectKey);
           uploadResults.push({
-            url: publicUrl,
+            url: resultUrl.url,
             key: objectKey,
             filename: file.name,
             deduped: true,
-            publiclyAccessible,
+            publiclyAccessible: resultUrl.publiclyAccessible,
           });
           continue;
         }
@@ -161,12 +175,16 @@ async function POST({ request }: { request: Request }) {
         return respErr(result.error || 'Upload failed');
       }
 
+      const resultUrl = await makeResultUrl(
+        result.url,
+        result.key || objectKey
+      );
       uploadResults.push({
-        url: result.url,
+        url: resultUrl.url,
         key: result.key || objectKey,
         filename: file.name,
         deduped: false,
-        publiclyAccessible,
+        publiclyAccessible: resultUrl.publiclyAccessible,
       });
     }
 
@@ -177,6 +195,32 @@ async function POST({ request }: { request: Request }) {
   } catch (e: any) {
     console.error('upload image failed:', e);
     return respErr(e?.message || 'upload image failed');
+  }
+}
+
+function hasPublicHttpUrl(value: string | undefined): boolean {
+  try {
+    const url = new URL(value || '');
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+function isPubliclyReachableUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
+
+    const hostname = url.hostname.toLowerCase();
+    return !(
+      hostname === 'localhost' ||
+      hostname.endsWith('.localhost') ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1'
+    );
+  } catch {
+    return false;
   }
 }
 

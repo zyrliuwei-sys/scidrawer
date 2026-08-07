@@ -23,6 +23,8 @@ export interface PricingPlan {
   description?: string;
   price: string;
   originalPrice?: string;
+  /** Clarifies the actual checkout cadence when the price is shown monthly. */
+  billingNote?: string;
   currency?: string;
   interval?: string;
   /**
@@ -208,6 +210,11 @@ export function PricingTable({
                   </span>
                 )}
               </p>
+              {plan.billingNote && (
+                <p className="text-muted-foreground mt-1 text-xs">
+                  {plan.billingNote}
+                </p>
+              )}
 
               {/* Description */}
               {plan.description && (

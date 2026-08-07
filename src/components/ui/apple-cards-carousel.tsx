@@ -192,9 +192,8 @@ export function AppleCardModal({ open, onClose, card }: ModalProps) {
                   </div>
                 ) : (
                   <p className="text-[14px] leading-relaxed text-slate-600">
-                    Generated with SciDrawer AI from a single prompt. Edit
-                    the prompt, regenerate, or export in your preferred
-                    format (PNG, SVG, PPTX).
+                    Generated with SciDrawer AI from a single prompt. Adjust
+                    the prompt, regenerate, or download the original image.
                   </p>
                 )}
               </div>

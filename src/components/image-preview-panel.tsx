@@ -21,7 +21,6 @@ import {
   X,
 } from 'lucide-react';
 
-import { apiGetBlob } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { useImagePreview } from '@/hooks/use-image-preview';
 import { Button } from '@/components/ui/button';
@@ -163,7 +162,6 @@ export function ImagePreviewPanel({
   const [search, setSearch] = useState('');
   const [modelFilter, setModelFilter] = useState('all');
   const [aspectFilter, setAspectFilter] = useState('all');
-  const [isDownloading, setIsDownloading] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'gallery'>('preview');
   const dragStateRef = useRef<{ startX: number; startWidth: number } | null>(
     null
@@ -328,26 +326,20 @@ export function ImagePreviewPanel({
       ? ({ '--preview-width': `${width}px` } as CSSProperties)
       : undefined;
 
-  const downloadActiveImage = useCallback(async () => {
-    if (!activeImage || isDownloading) return;
+  const downloadActiveImage = useCallback(() => {
+    if (!activeImage) return;
 
-    setIsDownloading(true);
-    try {
-      const blob = await apiGetBlob(activeImage.downloadUrl ?? activeImage.src);
-      const objectUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = objectUrl;
-      anchor.download = name;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
-    } catch (error) {
-      console.error('Unable to download generated image:', error);
-    } finally {
-      setIsDownloading(false);
-    }
-  }, [activeImage, isDownloading, name]);
+    // Trigger the browser-native download immediately instead of waiting for
+    // an entire Blob to arrive in memory. This endpoint replies with
+    // Content-Disposition: attachment, allowing the save-location flow to
+    // open as soon as headers arrive while the image streams in background.
+    const anchor = document.createElement('a');
+    anchor.href = activeImage.downloadUrl ?? activeImage.src;
+    anchor.download = name;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }, [activeImage, name]);
 
   return (
     <div className="contents">
@@ -455,14 +447,10 @@ export function ImagePreviewPanel({
                         size="icon-sm"
                         aria-label={copy.download}
                         title={copy.download}
-                        disabled={!activeImage || isDownloading}
+                        disabled={!activeImage}
                         onClick={downloadActiveImage}
                       >
-                        {isDownloading ? (
-                          <Loader2 className="animate-spin" />
-                        ) : (
-                          <Download />
-                        )}
+                        <Download />
                       </Button>
                       <Button
                         variant="ghost"

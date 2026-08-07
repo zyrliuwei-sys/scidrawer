@@ -1,5 +1,9 @@
 import { R2Provider, StorageManager } from '@/core/storage';
+import { envConfigs } from '@/config';
 import { getAllConfigs, type ConfigMap } from '@/modules/config/service';
+
+const REFERENCE_URL_TTL_MS = 60 * 60 * 1000;
+const REFERENCE_KEY_PATTERN = /^[a-f0-9]{32}\.[a-z0-9]{1,10}$/i;
 
 /**
  * Storage config is DB-driven (like auth/payment/email): values come from the
@@ -94,4 +98,136 @@ export async function fetchPrivateR2Object(
       signal: options.signal,
     })
   );
+}
+
+/**
+ * Make a short-lived, unguessable app URL for an uploaded reference image.
+ * EvoLink fetches this URL without browser cookies; the matching API route
+ * verifies the HMAC before it signs the private R2 request.
+ */
+export async function createReferenceImageProxyUrl(options: {
+  origin: string;
+  key: string;
+}): Promise<string | null> {
+  if (!REFERENCE_KEY_PATTERN.test(options.key) || !envConfigs.auth_secret) {
+    return null;
+  }
+
+  let origin: URL;
+  try {
+    origin = new URL(options.origin);
+    if (origin.protocol !== 'https:' && origin.protocol !== 'http:') {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  const payload = toBase64Url(
+    new TextEncoder().encode(
+      JSON.stringify({
+        key: options.key,
+        expiresAt: Date.now() + REFERENCE_URL_TTL_MS,
+      })
+    )
+  );
+  const signature = await signReferencePayload(payload);
+  return new URL(
+    `/api/storage/reference/${payload}.${signature}`,
+    origin.origin
+  ).toString();
+}
+
+/** Validates a short-lived reference proxy token and returns its object key. */
+export async function readReferenceImageProxyToken(
+  token: string
+): Promise<{ key: string } | null> {
+  const [payload, signature, ...rest] = token.split('.');
+  if (!payload || !signature || rest.length > 0 || !envConfigs.auth_secret) {
+    return null;
+  }
+
+  try {
+    const key = await referenceSigningKey();
+    const valid = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      fromBase64Url(signature),
+      new TextEncoder().encode(payload)
+    );
+    if (!valid) return null;
+
+    const decoded = JSON.parse(
+      new TextDecoder().decode(fromBase64Url(payload))
+    ) as { key?: unknown; expiresAt?: unknown };
+    if (
+      typeof decoded.key !== 'string' ||
+      !REFERENCE_KEY_PATTERN.test(decoded.key) ||
+      typeof decoded.expiresAt !== 'number' ||
+      decoded.expiresAt < Date.now()
+    ) {
+      return null;
+    }
+    return { key: decoded.key };
+  } catch {
+    return null;
+  }
+}
+
+/** Fetches a known uploaded key from the private R2 bucket. */
+export async function fetchPrivateR2Key(
+  key: string,
+  options: { signal?: AbortSignal; headers?: HeadersInit } = {}
+): Promise<Response | null> {
+  if (!REFERENCE_KEY_PATTERN.test(key)) return null;
+  const configs = await getAllConfigs();
+  if (!isConfigured(configs)) return null;
+
+  const endpoint =
+    configs.r2_endpoint ||
+    `https://${configs.r2_account_id}.r2.cloudflarestorage.com`;
+  const uploadPath = (configs.r2_upload_path || 'uploads')
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/\/+/g, '/');
+  const objectUrl = new URL(
+    `/${configs.r2_bucket_name}/${uploadPath}/${key}`,
+    endpoint.endsWith('/') ? endpoint : `${endpoint}/`
+  );
+  return fetchPrivateR2Object(objectUrl, options);
+}
+
+async function signReferencePayload(payload: string): Promise<string> {
+  const key = await referenceSigningKey();
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(payload)
+  );
+  return toBase64Url(new Uint8Array(signature));
+}
+
+async function referenceSigningKey(): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(envConfigs.auth_secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  );
+}
+
+function toBase64Url(bytes: Uint8Array): string {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+function fromBase64Url(value: string): Uint8Array {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }

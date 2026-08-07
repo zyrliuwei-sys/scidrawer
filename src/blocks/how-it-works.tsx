@@ -7,8 +7,8 @@ import {
 
 const STEPS = [
   { key: 'step1', image: '/imgs/hero/mechanism-analysis.png' },
-  { key: 'step2', image: '/imgs/generated/signaling-cascade.png' },
-  { key: 'step3', image: '/imgs/generated/how-it-works-organ-chip.png' },
+  { key: 'step2', image: '/imgs/generated/how-it-works-organ-chip.png' },
+  { key: 'step3', image: '/imgs/generated/cellular-architecture.png' },
 ] as const;
 
 export function HowItWorks() {

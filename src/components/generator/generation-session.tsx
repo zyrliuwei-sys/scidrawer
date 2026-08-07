@@ -9,7 +9,6 @@ import {
   LoaderCircle,
   RefreshCw,
   Sparkles,
-  X,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -27,7 +26,6 @@ export type GenerationSessionCopy = {
   image: string;
   generatingOne: string;
   elapsed: string;
-  stopWaiting: string;
   close: string;
   retry: string;
   regenerate: string;
@@ -49,7 +47,6 @@ type Props = {
   image?: PreviewImage;
   errorMessage?: string;
   copy: GenerationSessionCopy;
-  onStopWaiting: () => void;
   onClose: () => void;
   onRetry: () => void;
   onRegenerate: () => void;
@@ -65,7 +62,6 @@ export function GenerationSession({
   prompt,
   image,
   copy,
-  onStopWaiting,
   onClose,
   onRetry,
   onRegenerate,
@@ -134,20 +130,11 @@ export function GenerationSession({
                 <span className="hidden sm:inline">{copy.generatingOne}</span>
                 <LoaderCircle className="size-5 animate-spin text-sky-600" />
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onStopWaiting}
-                className="rounded-full"
-              >
-                <X className="size-3.5" />
-                {copy.stopWaiting}
-              </Button>
             </div>
           </div>
         ) : isSuccess && image && imageState !== 'error' ? (
           <div className="space-y-4">
-            <div className="relative flex min-h-[320px] items-center justify-center rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <div className="relative flex min-h-[220px] items-center justify-center rounded-xl border border-slate-100 bg-slate-50 p-4">
               {imageState === 'loading' && (
                 <LoaderCircle className="absolute size-5 animate-spin text-slate-400" />
               )}
@@ -158,7 +145,7 @@ export function GenerationSession({
                   alt={image.name ?? copy.title}
                   onError={retryPreview}
                   className={cn(
-                    'max-h-[520px] w-full object-contain transition-opacity duration-200',
+                    'max-h-[360px] w-full object-contain transition-opacity duration-200',
                     imageState === 'ready' ? 'opacity-100' : 'opacity-0'
                   )}
                 />
@@ -192,58 +179,59 @@ export function GenerationSession({
         )}
       </div>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
-        {isSuccess && imageState !== 'error' ? (
-          <div className="flex flex-wrap items-center gap-2">
+      {!isRunning && (
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5">
+          {isSuccess && imageState !== 'error' ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={
+                  <a
+                    href={image?.downloadUrl ?? image?.src}
+                    download={image?.name}
+                  />
+                }
+                className="h-10 gap-2.5 rounded-full border-slate-200 bg-white px-4 text-sm font-medium shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 [&_svg]:size-4"
+              >
+                <Download className="size-4" />
+                {copy.download}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onUseAsReference}
+                className="h-10 gap-2.5 rounded-full border-slate-200 bg-white px-4 text-sm font-medium shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 [&_svg]:size-4"
+              >
+                <Sparkles className="size-4" />
+                {copy.useAsReference}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onCopyPrompt}
+                className="h-10 gap-2.5 rounded-full border-slate-200 bg-white px-4 text-sm font-medium shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 [&_svg]:size-4"
+              >
+                <Clipboard className="size-4" />
+                {copy.copyPrompt}
+              </Button>
+            </div>
+          ) : (
             <Button
               variant="outline"
-              nativeButton={false}
-              render={
-                <a
-                  href={image?.downloadUrl ?? image?.src}
-                  download={image?.name}
-                />
-              }
-              className="rounded-full"
+              onClick={onClose}
+              className="h-10 gap-2.5 rounded-full border-slate-200 bg-white px-4 text-sm font-medium shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
             >
-              <Download className="size-3.5" />
-              {copy.download}
+              {copy.close}
             </Button>
-            <Button
-              variant="outline"
-              onClick={onUseAsReference}
-              className="rounded-full"
-            >
-              <Sparkles className="size-3.5" />
-              {copy.useAsReference}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onCopyPrompt}
-              className="rounded-full text-slate-600"
-            >
-              <Clipboard className="size-3.5" />
-              {copy.copyPrompt}
-            </Button>
-          </div>
-        ) : !isRunning ? (
-          <Button variant="outline" onClick={onClose} className="rounded-full">
-            {copy.close}
-          </Button>
-        ) : (
-          <span />
-        )}
-        {!isRunning && (
+          )}
           <Button
             onClick={onRegenerate}
-            className="rounded-full bg-slate-800 hover:bg-slate-900"
+            className="h-10 gap-2.5 rounded-full bg-slate-800 px-4 text-sm font-medium hover:bg-slate-900"
           >
-            <RefreshCw className="size-3.5" />
+            <RefreshCw className="size-4" />
             {copy.regenerate}
           </Button>
-        )}
-      </footer>
+        </footer>
+      )}
     </section>
   );
 }
