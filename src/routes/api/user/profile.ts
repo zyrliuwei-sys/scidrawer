@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { getAuth } from '@/core/auth';
 import { db } from '@/core/db';
 import { envConfigs } from '@/config';
-import { user } from '@/config/db/schema';
+import { user } from '@/config/db/schema.postgres';
 import { respData, respErr } from '@/lib/resp';
 
 async function PATCH({ request }: { request: Request }) {

@@ -1,3 +1,4 @@
+import { createElement } from 'react';
 import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { oneTap } from 'better-auth/plugins';
@@ -8,7 +9,7 @@ import { CloudflareEmailProvider } from '@/core/email/cloudflare';
 import { ResendProvider } from '@/core/email/resend';
 import { VerifyEmail } from '@/core/email/templates/verify-email';
 import { AUTH_SECRET_PLACEHOLDER, envConfigs } from '@/config';
-import * as schema from '@/config/db/schema';
+import * as schema from '@/config/db/schema.postgres';
 import { getAllConfigs } from '@/modules/config/service';
 import { grantForNewUser } from '@/modules/credits/service';
 import { grantRoleForNewUser } from '@/modules/rbac/service';
@@ -381,7 +382,16 @@ export function getAuth(configs?: Record<string, string>) {
                 const result = await emailCtx.provider.sendEmail({
                   to: user.email,
                   subject: `Verify your email - ${appName}`,
-                  react: VerifyEmail({ appName, logoUrl, url }),
+                  // `react` must be a ReactElement, not a function call —
+                  // otherwise the template's hooks execute outside React's
+                  // dispatcher and throw `Cannot read properties of null
+                  // (reading 'useContext')` in dev. This file is `.ts` so
+                  // we use `createElement` instead of JSX.
+                  react: createElement(VerifyEmail, {
+                    appName,
+                    logoUrl,
+                    url,
+                  }),
                 });
                 if (!result.success) {
                   console.error(

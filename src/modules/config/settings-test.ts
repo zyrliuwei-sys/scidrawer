@@ -8,6 +8,7 @@
  * import it without pulling provider SDKs.
  */
 
+import { EvolinkProvider } from '@/core/ai/evolink';
 import { FalProvider } from '@/core/ai/fal';
 import { ReplicateProvider } from '@/core/ai/replicate';
 import { AIMediaType } from '@/core/ai/types';
@@ -58,6 +59,8 @@ export async function runTest(
         return await testReplicate(inputs, configs);
       case 'fal':
         return await testFal(inputs, configs);
+      case 'evolink':
+        return await testEvolink(inputs, configs);
       default:
         return { success: false, message: `No test available for "${group}"` };
     }
@@ -497,6 +500,29 @@ async function testFal(
   return {
     success: true,
     message: 'Fal accepted the request',
+    details: { 'Task ID': result.taskId, Status: result.taskStatus },
+  };
+}
+
+async function testEvolink(
+  inputs: Record<string, string>,
+  configs: Record<string, string>
+): Promise<TestResult> {
+  const missing = need(configs, ['evolink_api_key']);
+  if (missing) return { success: false, message: missing };
+
+  const provider = new EvolinkProvider({ apiKey: configs.evolink_api_key });
+  const result = await provider.generate({
+    params: {
+      mediaType: AIMediaType.IMAGE,
+      model: 'gpt-image-2',
+      prompt: inputs.prompt,
+      options: { size: '1:1', resolution: '1K', quality: 'low', n: 1 },
+    },
+  });
+  return {
+    success: true,
+    message: 'EvoLink accepted the image generation task',
     details: { 'Task ID': result.taskId, Status: result.taskStatus },
   };
 }

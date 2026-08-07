@@ -12,7 +12,6 @@ import {
 
 import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
-import { SupportWidget } from '@/blocks/support-widget';
 import { AppLayout } from '@/components/app-layout';
 
 export const Route = createFileRoute('/settings')({
@@ -77,7 +76,6 @@ function SettingsLayout() {
       brandHref="/settings"
     >
       <Outlet />
-      <SupportWidget />
     </AppLayout>
   );
 }

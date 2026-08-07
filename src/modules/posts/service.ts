@@ -1,7 +1,7 @@
 import { and, count, desc, eq, like, or, type SQL } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { post } from '@/config/db/schema';
+import { post } from '@/config/db/schema.postgres';
 import { getUuid } from '@/lib/hash';
 
 export enum PostType {

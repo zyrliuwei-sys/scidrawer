@@ -2,7 +2,8 @@
 
 import { useState, type ComponentType, type SVGProps } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Check } from 'lucide-react';
+import { CircleCheck } from 'lucide-react';
+import { motion } from 'motion/react';
 
 import { apiPost } from '@/lib/api-client';
 import { currentPathWithQuery } from '@/lib/redirect';
@@ -24,6 +25,15 @@ export interface PricingPlan {
   originalPrice?: string;
   currency?: string;
   interval?: string;
+  /**
+   * Override for the interval label rendered after the price. Use when the
+   * billing interval differs from the unit you want to show users — yearly
+   * plans can pass `displayInterval: 'mo'` to show "$7 / mo" while the
+   * underlying subscription still bills annually.
+   */
+  displayInterval?: string;
+  /** Optional resolution label rendered next to the plan name (e.g. "1K", "2K", "4K"). */
+  resolution?: string;
   featured?: boolean;
   badge?: string;
   features: PricingFeature[];
@@ -54,7 +64,13 @@ export function PricingTable({
   groups: PricingGroup[];
   onCheckout?: (plan: PricingPlan) => void;
 }) {
-  const [activeGroup, setActiveGroup] = useState(groups[0]?.key || '');
+  const [activeGroup, setActiveGroup] = useState(() => {
+    const monthly = groups.find((g) => g.key === 'monthly');
+    if (monthly) return monthly.key;
+    const payg = groups.find((g) => g.key === 'pay_as_you_go');
+    if (payg) return payg.key;
+    return groups[0]?.key || '';
+  });
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const currentGroup = groups.find((g) => g.key === activeGroup) || groups[0];
@@ -99,85 +115,136 @@ export function PricingTable({
   }
 
   return (
-    <div className="space-y-10">
-      {/* Group tabs — pill toggle */}
+    <div className="relative">
+      {/* Group tabs — animated pill toggle */}
       {groups.length > 1 && (
-        <div className="flex justify-center">
-          <div className="border-border bg-muted/40 inline-flex items-center rounded-full border p-1">
-            {groups.map((group) => (
-              <button
-                key={group.key}
-                onClick={() => setActiveGroup(group.key)}
-                className={cn(
-                  'rounded-full px-5 py-1.5 text-sm font-medium transition-colors',
-                  activeGroup === group.key
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {group.label}
-              </button>
-            ))}
-          </div>
+        <div className="bg-muted mx-auto mb-12 flex w-fit items-center justify-center overflow-hidden rounded-full p-1">
+          {groups.map((group) => (
+            <button
+              key={group.key}
+              onClick={() => setActiveGroup(group.key)}
+              className={cn(
+                'relative rounded-full px-5 py-2 text-sm font-medium transition-colors',
+                activeGroup === group.key
+                  ? 'text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {activeGroup === group.key && (
+                <motion.span
+                  layoutId="pricing-toggle-pill"
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                  className="bg-primary absolute inset-0 rounded-full"
+                />
+              )}
+              <span className="relative z-10">{group.label}</span>
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Plans grid */}
+      {/* Plans grid — flush columns inside a bordered band */}
       <div
         className={cn(
-          'mx-auto grid gap-6',
+          'border-border bg-muted/30 relative z-20 mx-auto grid grid-cols-1 items-stretch border-y',
           currentGroup?.plans.length === 2
-            ? 'max-w-3xl sm:grid-cols-2'
+            ? 'max-w-3xl md:grid-cols-2'
             : currentGroup?.plans.length === 3
-              ? 'max-w-5xl sm:grid-cols-2 lg:grid-cols-3'
-              : 'max-w-6xl sm:grid-cols-2 lg:grid-cols-4'
+              ? 'max-w-5xl md:grid-cols-2 xl:grid-cols-3'
+              : 'max-w-6xl md:grid-cols-2 xl:grid-cols-4'
         )}
       >
-        {currentGroup?.plans.map((plan) => (
+        {currentGroup?.plans.map((plan, planIdx) => (
           <div
             key={plan.id}
             className={cn(
-              'border-border relative flex flex-col rounded-2xl border p-8 transition-all',
-              plan.featured
-                ? 'bg-card ring-foreground/10 shadow-md ring-1'
-                : 'bg-background hover:border-foreground/30'
+              'relative flex h-full flex-col justify-between px-6 py-8',
+              plan.featured ? 'bg-background shadow-2xl' : 'bg-transparent'
             )}
           >
-            {/* Plan name */}
-            {plan.name && (
-              <p className="text-foreground mb-2 text-sm font-medium">
-                {plan.name}
-              </p>
-            )}
-
-            {/* Price */}
-            <div className="mb-2 flex items-baseline gap-1">
-              <span className="font-serif text-5xl tracking-tight">
-                {plan.price}
-              </span>
-              {plan.interval && (
-                <span className="text-muted-foreground text-sm">
-                  /{plan.interval}
+            <div>
+              {/* Badge — "Most popular" / "Best value" */}
+              {plan.badge && (
+                <span className="bg-primary text-primary-foreground absolute top-8 right-6 rounded-full px-3 py-1 text-xs font-medium">
+                  {plan.badge}
                 </span>
               )}
-            </div>
-            {plan.originalPrice && (
-              <span className="text-muted-foreground mb-1 text-sm line-through">
-                {plan.originalPrice}
-              </span>
-            )}
 
-            {/* Description */}
-            {plan.description && (
-              <p className="text-muted-foreground mb-8 text-sm">
-                {plan.description}
+              {/* Plan name */}
+              {plan.name && (
+                <h3
+                  className={cn(
+                    'flex items-baseline gap-2 text-base leading-7 font-semibold',
+                    plan.featured ? 'text-foreground' : 'text-foreground/80'
+                  )}
+                >
+                  {plan.name}
+                </h3>
+              )}
+
+              {/* Price */}
+              <p className="mt-4 flex items-baseline gap-1">
+                <motion.span
+                  key={activeGroup}
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{
+                    duration: 0.2,
+                    ease: 'easeOut',
+                    delay: 0.1 * planIdx,
+                  }}
+                  className="inline-block font-serif text-4xl font-bold tracking-tight"
+                >
+                  {plan.price}
+                </motion.span>
+                {(plan.displayInterval || plan.interval) && (
+                  <span className="text-muted-foreground text-sm">
+                    /{plan.displayInterval || plan.interval}
+                  </span>
+                )}
+                {plan.originalPrice && (
+                  <span className="text-muted-foreground text-sm line-through">
+                    {plan.originalPrice}
+                  </span>
+                )}
               </p>
-            )}
 
-            {/* CTA — full-width pill */}
+              {/* Description */}
+              {plan.description && (
+                <p className="text-muted-foreground mt-6 h-12 text-sm leading-7">
+                  {plan.description}
+                </p>
+              )}
+
+              {/* Features */}
+              <ul className="text-muted-foreground mt-2 space-y-3 text-sm leading-6 sm:mt-4">
+                {plan.features.map((feature, i) => {
+                  const isObj = typeof feature !== 'string';
+                  const Icon: IconComponent =
+                    (isObj && feature.icon) || CircleCheck;
+                  const label = isObj ? feature.label : feature;
+                  return (
+                    <li key={i} className="flex gap-x-3">
+                      <Icon
+                        className={cn(
+                          'h-5 w-5 flex-none',
+                          plan.featured
+                            ? 'text-foreground'
+                            : 'text-muted-foreground'
+                        )}
+                        aria-hidden="true"
+                      />
+                      <span>{label}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* CTA */}
             <Button
               variant={plan.featured ? 'default' : 'outline'}
-              className="h-10 w-full rounded-full text-sm font-medium"
+              className="mt-8 h-10 w-full rounded-lg text-sm font-semibold transition duration-200 hover:-translate-y-1 sm:mt-10"
               onClick={() => handleCheckout(plan)}
               disabled={loadingId === plan.id}
             >
@@ -185,24 +252,32 @@ export function PricingTable({
                 ? m['common.pricing.processing']()
                 : plan.buttonText || m['common.pricing.get_started']()}
             </Button>
-
-            {/* Features */}
-            <ul className="mt-8 space-y-3">
-              {plan.features.map((feature, i) => {
-                const isObj = typeof feature !== 'string';
-                const Icon: IconComponent = (isObj && feature.icon) || Check;
-                const label = isObj ? feature.label : feature;
-                return (
-                  <li key={i} className="flex items-center gap-2.5 text-sm">
-                    <Icon className="text-muted-foreground size-4 shrink-0" />
-                    <span className="text-foreground/90">{label}</span>
-                  </li>
-                );
-              })}
-            </ul>
           </div>
         ))}
       </div>
     </div>
+  );
+}
+
+/** Decorative plus sign used at the corners of the pricing frame. */
+export function PricingCornerIcon({
+  className,
+  ...rest
+}: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="1"
+      stroke="currentColor"
+      className={cn(
+        'text-muted-foreground/60 h-4 w-4 md:h-8 md:w-8',
+        className
+      )}
+      {...rest}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+    </svg>
   );
 }

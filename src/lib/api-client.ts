@@ -24,10 +24,14 @@ export interface PageParams {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const isFormData =
+    typeof FormData !== 'undefined' && init?.body instanceof FormData;
   const res = await fetch(url, {
     ...init,
     headers: {
-      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(init?.body && !isFormData
+        ? { 'Content-Type': 'application/json' }
+        : {}),
       ...init?.headers,
     },
   });
@@ -48,11 +52,43 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 export const apiGet = <T>(url: string, init?: RequestInit) =>
   request<T>(url, init);
 
+/**
+ * Fetch a binary API response without trying to unwrap the JSON API envelope.
+ * Protected image previews are rendered from a local Blob URL rather than an
+ * `<img>` navigation to the API route.
+ */
+export async function apiGetBlob(
+  url: string,
+  init?: RequestInit
+): Promise<Blob> {
+  const res = await fetch(url, {
+    ...init,
+    credentials: init?.credentials ?? 'same-origin',
+    headers: init?.headers,
+  });
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      `Image preview request failed (${res.status})`
+    );
+  }
+
+  const blob = await res.blob();
+  if (!blob.type.toLowerCase().startsWith('image/')) {
+    throw new ApiError(415, 'Image preview returned an unsupported file type');
+  }
+  return blob;
+}
+
 export const apiPost = <T = void>(url: string, body?: unknown) =>
   request<T>(url, {
     method: 'POST',
     body: body == null ? undefined : JSON.stringify(body),
   });
+
+/** Upload multipart form data while retaining the API envelope/error handling. */
+export const apiPostForm = <T = void>(url: string, body: FormData) =>
+  request<T>(url, { method: 'POST', body });
 
 export const apiPut = <T = void>(url: string, body?: unknown) =>
   request<T>(url, { method: 'PUT', body: JSON.stringify(body) });

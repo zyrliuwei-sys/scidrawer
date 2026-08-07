@@ -9,7 +9,7 @@
 import { and, eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
-import * as schema from '../src/config/db/schema';
+import * as schema from '../src/config/db/schema.postgres';
 
 // ─── Create DB connection based on provider ─────────────────────────────────
 async function createScriptDb() {

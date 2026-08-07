@@ -49,16 +49,18 @@ export function LocaleSelector({
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {locales.map((loc) => (
-          <DropdownMenuItem
-            key={loc}
-            onClick={() => handleSwitch(loc)}
-            className="flex items-center justify-between gap-2"
-          >
-            {localeNames[loc] || loc}
-            {loc === locale && <Check className="size-3.5" />}
-          </DropdownMenuItem>
-        ))}
+        {locales
+          .filter((loc) => loc !== 'zh')
+          .map((loc) => (
+            <DropdownMenuItem
+              key={loc}
+              onClick={() => handleSwitch(loc)}
+              className="flex items-center justify-between gap-2"
+            >
+              {localeNames[loc] || loc}
+              {loc === locale && <Check className="size-3.5" />}
+            </DropdownMenuItem>
+          ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );

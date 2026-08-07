@@ -12,8 +12,12 @@ export interface FooterColumn {
   links: { label: string; href: string; external?: boolean }[];
 }
 
-/** Off-site URLs render as plain <a>; internal paths use the locale-aware Link. */
-const isExternalHref = (href: string) => /^https?:\/\//.test(href);
+/**
+ * Off-site URLs render as plain <a>; internal paths use the locale-aware Link.
+ * `mailto:`/`tel:` must be excluded too — the locale-aware Link would rewrite
+ * them into `/zh/mailto:...`.
+ */
+const isExternalHref = (href: string) => /^(https?:|mailto:|tel:)/.test(href);
 
 export interface FooterSocial {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
@@ -110,7 +114,7 @@ export function SiteFooter({
           )}
           <LocaleSelector
             variant="pill"
-            className="border-neutral-700 text-neutral-200 hover:bg-white/5 hover:text-neutral-50"
+            className="hidden border-neutral-700 text-neutral-200 hover:bg-white/5 hover:text-neutral-50"
           />
         </div>
 

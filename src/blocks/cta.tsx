@@ -9,7 +9,7 @@ export function CTA() {
   return (
     <section className="px-4 pb-24 sm:pb-24">
       <div className="mx-auto max-w-5xl">
-        <div className="rounded-3xl border border-dashed px-6 py-12 text-center sm:px-10 sm:py-16">
+        <div className="border-primary/30 bg-accent/40 rounded-3xl border border-dashed px-6 py-12 text-center sm:px-10 sm:py-16">
           <h2 className="mx-auto max-w-3xl font-serif text-4xl leading-[1.1] font-medium tracking-tight sm:text-5xl lg:text-5xl">
             {m['landing.cta.headline']()}
           </h2>
@@ -18,10 +18,10 @@ export function CTA() {
           </p>
           <div className="mt-8 flex justify-center">
             <Link
-              href="/settings"
+              href="/generate"
               className={cn(
                 buttonVariants({ size: 'lg' }),
-                'h-12 gap-2 rounded-full px-8'
+                'h-10 gap-2 rounded-full px-5'
               )}
             >
               {m['landing.cta.button']()}

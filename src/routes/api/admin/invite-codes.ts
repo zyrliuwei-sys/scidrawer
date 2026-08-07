@@ -3,7 +3,7 @@ import { and, count, desc, gte, like, or, sql, type SQL } from 'drizzle-orm';
 
 import { getAuth } from '@/core/auth';
 import { db } from '@/core/db';
-import { inviteCode } from '@/config/db/schema';
+import { inviteCode } from '@/config/db/schema.postgres';
 import {
   createInviteCode,
   createInviteCodesBatch,

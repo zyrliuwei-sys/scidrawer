@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gt, isNull, or, sql, sum } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { credit } from '@/config/db/schema';
+import { credit } from '@/config/db/schema.postgres';
 import { getSnowId, getUuid } from '@/lib/hash';
 
 // --- Enums ---

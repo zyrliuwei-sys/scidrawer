@@ -3,7 +3,7 @@ import { and, count, like, or, type SQL } from 'drizzle-orm';
 
 import { getAuth } from '@/core/auth';
 import { db } from '@/core/db';
-import { permission } from '@/config/db/schema';
+import { permission } from '@/config/db/schema.postgres';
 import {
   createPermission,
   deletePermission,

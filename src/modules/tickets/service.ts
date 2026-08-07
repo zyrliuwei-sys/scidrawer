@@ -17,7 +17,7 @@ import {
   user,
   type Ticket,
   type TicketMessage,
-} from '@/config/db/schema';
+} from '@/config/db/schema.postgres';
 import { getUuid } from '@/lib/hash';
 
 export type TicketStatus = 'open' | 'replied' | 'closed';

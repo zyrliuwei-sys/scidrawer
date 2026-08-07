@@ -1,7 +1,7 @@
 import { and, count, desc, eq, inArray } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { subscription } from '@/config/db/schema';
+import { subscription } from '@/config/db/schema.postgres';
 import { getSnowId, getUuid } from '@/lib/hash';
 
 export enum SubscriptionStatus {

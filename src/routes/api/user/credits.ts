@@ -3,7 +3,7 @@ import { and, count, desc, eq, isNull, like, or, type SQL } from 'drizzle-orm';
 
 import { getAuth } from '@/core/auth';
 import { db } from '@/core/db';
-import { credit } from '@/config/db/schema';
+import { credit } from '@/config/db/schema.postgres';
 import { respErr, respPage } from '@/lib/resp';
 
 async function GET({ request }: { request: Request }) {

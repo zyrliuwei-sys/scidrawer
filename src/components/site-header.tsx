@@ -5,7 +5,6 @@ import { ArrowRight, Menu, X } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
 import { Link } from '@/core/i18n/navigation';
-import { envConfigs } from '@/config';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { LocaleSelector } from '@/components/locale-selector';
@@ -31,10 +30,17 @@ export function SiteHeader({ navLinks }: { navLinks?: NavLink[] }) {
   return (
     <header className="bg-background/80 sticky top-0 z-50 w-full backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        {/* Brand */}
-        <Link href="/" className="flex items-center">
-          <span className="font-serif text-lg italic">
-            {envConfigs.app_name}
+        {/* Brand — logo + wordmark on the left */}
+        <Link href="/" className="flex items-center gap-2">
+          <img
+            src="/logo.svg"
+            alt="SciDrawer AI logo"
+            width={28}
+            height={28}
+            className="size-7 rounded-md"
+          />
+          <span className="font-serif text-lg font-semibold tracking-tight">
+            SciDrawer AI
           </span>
         </Link>
 
@@ -66,7 +72,7 @@ export function SiteHeader({ navLinks }: { navLinks?: NavLink[] }) {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-3 md:flex">
-          <LocaleSelector />
+          <LocaleSelector className="hidden" />
           <ThemeToggle />
           {user ? (
             <SiteUserMenu
@@ -123,7 +129,7 @@ export function SiteHeader({ navLinks }: { navLinks?: NavLink[] }) {
             )}
           </nav>
           <div className="border-border mt-3 flex items-center gap-2 border-t pt-3">
-            <LocaleSelector />
+            <LocaleSelector className="hidden" />
             <ThemeToggle />
             <div className="flex-1" />
             {user ? (

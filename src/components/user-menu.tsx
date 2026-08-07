@@ -133,15 +133,17 @@ export function UserMenu({
                 <span className="flex-1">{localeNames[locale] || locale}</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
-                {locales.map((loc) => (
-                  <DropdownMenuItem
-                    key={loc}
-                    onClick={() => handleLocaleSwitch(loc)}
-                  >
-                    <span className="flex-1">{localeNames[loc] || loc}</span>
-                    {loc === locale && <CheckIcon className="size-3.5" />}
-                  </DropdownMenuItem>
-                ))}
+                {locales
+                  .filter((loc) => loc !== 'zh')
+                  .map((loc) => (
+                    <DropdownMenuItem
+                      key={loc}
+                      onClick={() => handleLocaleSwitch(loc)}
+                    >
+                      <span className="flex-1">{localeNames[loc] || loc}</span>
+                      {loc === locale && <CheckIcon className="size-3.5" />}
+                    </DropdownMenuItem>
+                  ))}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSub>

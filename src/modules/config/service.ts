@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 
 import { db } from '@/core/db';
 import { envConfigs } from '@/config';
-import { config } from '@/config/db/schema';
+import { config } from '@/config/db/schema.postgres';
 import { decryptSecret, encryptSecret, isEncryptedSecret } from '@/lib/crypto';
 
 import { getSettings } from './settings';

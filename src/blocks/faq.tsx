@@ -7,12 +7,19 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 
-const FAQ_KEYS = [
-  'stack',
-  'payment',
-  'database',
-  'customize',
-  'license',
+/**
+ * Shared with the homepage FAQPage JSON-LD (`src/routes/index.tsx`) so the
+ * structured data and the visible accordion never drift apart — Google flags
+ * FAQ markup that doesn't appear on the page.
+ */
+export const FAQ_KEYS = [
+  'submit',
+  'formats',
+  'compare',
+  'sketch',
+  'style',
+  'chinese',
+  'rights',
 ] as const;
 
 export function FAQ() {

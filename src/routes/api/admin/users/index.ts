@@ -3,7 +3,7 @@ import { and, count, desc, like, or, type SQL } from 'drizzle-orm';
 
 import { getAuth } from '@/core/auth';
 import { db } from '@/core/db';
-import { user } from '@/config/db/schema';
+import { user } from '@/config/db/schema.postgres';
 import { getBalance } from '@/modules/credits/service';
 import { hasPermission } from '@/modules/rbac/service';
 import { respErr, respPage } from '@/lib/resp';

@@ -4,6 +4,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { getAuth } from '@/core/auth';
 import { envConfigs } from '@/config';
+import { getAllConfigs } from '@/modules/config/service';
 import { getStorage } from '@/modules/storage/service';
 import { md5 } from '@/lib/hash';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
@@ -27,6 +28,23 @@ const extFromMime = (mimeType: string) => {
 // Cap for the no-storage local-disk fallback (dev). Configurable via INLINE_IMAGE_MAX_KB.
 const INLINE_MAX_BYTES =
   (Number(envConfigs.inline_image_max_kb) || 10240) * 1024;
+const REFERENCE_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const REFERENCE_IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
+
+function hasPublicR2Domain(domain: string | undefined): boolean {
+  if (!domain) return false;
+  try {
+    const url = new URL(domain);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
 
 async function POST({ request }: { request: Request }) {
   const limited = enforceMinIntervalRateLimit(request, {
@@ -44,21 +62,45 @@ async function POST({ request }: { request: Request }) {
     const files = formData.getAll('files') as File[];
     if (!files.length) return respErr('No files provided');
 
+    const isReferenceUpload =
+      new URL(request.url).searchParams.get('purpose') === 'reference';
     const storage = await getStorage();
+    // The S3-compatible R2 endpoint requires credentials. EvoLink cannot fetch
+    // files from it, so only a configured public domain is a valid reference
+    // image source for generation.
+    const publiclyAccessible = isReferenceUpload
+      ? hasPublicR2Domain((await getAllConfigs()).r2_domain)
+      : undefined;
+    if (isReferenceUpload && !publiclyAccessible) {
+      return respErr(
+        'Reference images require a public URL. Configure a valid R2 Domain in Admin → Storage before uploading.'
+      );
+    }
     const uploadResults: Array<{
       url: string;
       key: string;
       filename: string;
       deduped: boolean;
+      publiclyAccessible?: boolean;
     }> = [];
 
     for (const file of files) {
       if (!file.type.startsWith('image/')) {
         return respErr(`File ${file.name} is not an image`);
       }
+      if (isReferenceUpload && !REFERENCE_IMAGE_TYPES.has(file.type)) {
+        return respErr(
+          `Reference image ${file.name} must be JPG, PNG, WebP, or GIF`
+        );
+      }
 
       const arrayBuffer = await file.arrayBuffer();
       const body = new Uint8Array(arrayBuffer);
+      if (isReferenceUpload && body.length > REFERENCE_IMAGE_MAX_BYTES) {
+        return respErr(
+          `Reference image ${file.name} must be smaller than 10MB`
+        );
+      }
 
       const digest = md5(body);
       const ext =
@@ -88,6 +130,7 @@ async function POST({ request }: { request: Request }) {
           key: `uploads/${objectKey}`,
           filename: file.name,
           deduped: false,
+          publiclyAccessible,
         });
         continue;
       }
@@ -101,6 +144,7 @@ async function POST({ request }: { request: Request }) {
             key: objectKey,
             filename: file.name,
             deduped: true,
+            publiclyAccessible,
           });
           continue;
         }
@@ -122,6 +166,7 @@ async function POST({ request }: { request: Request }) {
         key: result.key || objectKey,
         filename: file.name,
         deduped: false,
+        publiclyAccessible,
       });
     }
 

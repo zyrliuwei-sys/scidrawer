@@ -1,4 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Favicon">
-  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
-  <text x="50%" y="50%" dy="0.04em" text-anchor="middle" dominant-baseline="central" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="360" font-weight="700" fill="#ffffff">S</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="SciDrawer AI favicon">
+  <rect width="512" height="512" rx="96" fill="#0f172a"/>
+  <g fill="none" stroke="#f8fafc" stroke-width="24" stroke-linecap="round">
+    <ellipse cx="256" cy="256" rx="160" ry="64"/>
+    <ellipse cx="256" cy="256" rx="160" ry="64" transform="rotate(60 256 256)"/>
+    <ellipse cx="256" cy="256" rx="160" ry="64" transform="rotate(-60 256 256)"/>
+  </g>
 </svg>

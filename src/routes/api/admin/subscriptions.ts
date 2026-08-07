@@ -3,7 +3,7 @@ import { and, count, desc, eq, type SQL } from 'drizzle-orm';
 
 import { getAuth } from '@/core/auth';
 import { db } from '@/core/db';
-import { subscription } from '@/config/db/schema';
+import { subscription } from '@/config/db/schema.postgres';
 import { hasPermission } from '@/modules/rbac/service';
 import { respErr, respPage } from '@/lib/resp';
 

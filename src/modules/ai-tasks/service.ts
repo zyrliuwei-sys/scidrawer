@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { aiTask } from '@/config/db/schema';
+import { aiTask } from '@/config/db/schema.postgres';
 import { consume, revoke } from '@/modules/credits/service';
 import { getUuid } from '@/lib/hash';
 
@@ -37,6 +37,7 @@ export async function createTask(params: {
       provider,
       model,
       prompt,
+      options: options ? JSON.stringify(options) : null,
       status: AITaskStatus.PENDING,
       costCredits: costCredits || 0,
     };
@@ -71,6 +72,26 @@ export async function createTask(params: {
 
     return task;
   });
+}
+
+/**
+ * Attach the provider-owned asynchronous task ID after a generation request
+ * has been accepted. The database task ID remains the stable ID exposed to
+ * the browser, while the provider ID is kept server-side for polling.
+ */
+export async function attachProviderTask(params: {
+  taskId: string;
+  providerTaskId: string;
+  taskResult?: unknown;
+}) {
+  const updateData: { taskId: string; taskResult?: string } = {
+    taskId: params.providerTaskId,
+  };
+  if (params.taskResult !== undefined) {
+    updateData.taskResult = JSON.stringify(params.taskResult);
+  }
+
+  await db().update(aiTask).set(updateData).where(eq(aiTask.id, params.taskId));
 }
 
 /**
