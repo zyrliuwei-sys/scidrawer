@@ -35,11 +35,22 @@ function HomePage() {
 export const Route = createFileRoute('/')({
   // Resolved server-side so crawlers get the localized strings in the SSR HTML
   // rather than after hydration.
-  loader: () => {
+  loader: ({ request }) => {
     const locale = getLocale();
     const opts = { locale: locale as (typeof locales)[number] };
+    // Capture the request origin so canonical/og:url match the actual host —
+    // VITE_APP_URL is often localhost in dev and unset on Vercel previews,
+    // which would otherwise point canonical at http://localhost:3000.
+    const origin = (() => {
+      try {
+        return new URL(request.url).origin;
+      } catch {
+        return envConfigs.app_url;
+      }
+    })();
     return {
       locale,
+      origin,
       title: m['landing.seo.title']({}, opts),
       description: m['landing.seo.description']({}, opts),
       ogAlt: m['landing.seo.og_alt']({}, opts),
@@ -53,35 +64,36 @@ export const Route = createFileRoute('/')({
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};
-    const { locale, title, description, ogAlt, faq } = loaderData;
+    const { locale, origin, title, description, ogAlt, faq } = loaderData;
+    const baseUrl = origin || envConfigs.app_url;
 
     const urlFor = (loc: string) =>
-      localizeUrl(`${envConfigs.app_url}/`, {
+      localizeUrl(`${baseUrl}/`, {
         locale: loc as (typeof locales)[number],
       }).href;
     const canonical = urlFor(locale);
-    const ogImage = `${envConfigs.app_url}/imgs/og.png`;
+    const ogImage = `${baseUrl}/imgs/og.png`;
 
     const jsonLd = {
       '@context': 'https://schema.org',
       '@graph': [
         {
           '@type': 'Organization',
-          '@id': `${envConfigs.app_url}/#organization`,
+          '@id': `${baseUrl}/#organization`,
           name: envConfigs.app_name,
-          url: envConfigs.app_url,
-          logo: `${envConfigs.app_url}/logo.svg`,
+          url: baseUrl,
+          logo: `${baseUrl}/logo.svg`,
         },
         {
           '@type': 'SoftwareApplication',
-          '@id': `${envConfigs.app_url}/#software`,
+          '@id': `${baseUrl}/#software`,
           name: envConfigs.app_name,
           url: canonical,
           description,
           applicationCategory: 'DesignApplication',
           operatingSystem: 'Web',
           inLanguage: locales,
-          publisher: { '@id': `${envConfigs.app_url}/#organization` },
+          publisher: { '@id': `${baseUrl}/#organization` },
           offers: {
             '@type': 'AggregateOffer',
             priceCurrency: 'USD',
@@ -92,7 +104,7 @@ export const Route = createFileRoute('/')({
         },
         {
           '@type': 'FAQPage',
-          '@id': `${envConfigs.app_url}/#faq`,
+          '@id': `${baseUrl}/#faq`,
           mainEntity: faq.map((item) => ({
             '@type': 'Question',
             name: item.question,
