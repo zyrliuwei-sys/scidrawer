@@ -1,4 +1,4 @@
-# ShipAny Next
+# SciDrawer
 
 A headless SaaS engine for building AI-powered products with Claude Code. Pre-wired business logic (payments, credits, subscriptions, auth, RBAC, i18n, CMS) with minimal UI — you build your product pages on top.
 
@@ -139,4 +139,4 @@ INLINE_IMAGE_MAX_KB=2048
 
 This is proprietary software. See [LICENSE](./LICENSE) for the full license agreement.
 
-**ShipAny** — [shipany.ai](https://shipany.ai)
+**SciDrawer** — [scidrawer.com](https://scidrawer.com)

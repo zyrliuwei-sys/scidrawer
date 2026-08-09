@@ -1,5 +1,5 @@
 import { tDynamic } from '@/core/i18n/dynamic';
-import { envConfigs } from '@/config';
+import { envConfigs, getSiteUrl } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { getLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 import { CTA } from '@/blocks/cta';
@@ -37,37 +37,12 @@ export function HomeContent() {
  * (/scientific-diagram-maker). Both routes render the same content; the
  * vanity URL exists so on-page SEO audits can see the keyword in the path.
  */
-export function homeLoader({ request }: { request: Request }) {
+export function homeLoader() {
   const locale = getLocale();
   const opts = { locale: locale as (typeof locales)[number] };
-  // Capture the request origin so canonical/og:url match the actual host —
-  // VITE_APP_URL is often localhost in dev, falling back to envConfigs.app_url
-  // would otherwise point canonical at http://localhost:3000. On Vercel,
-  // VERCEL_PROJECT_PRODUCTION_URL is the production domain — prefer it for
-  // canonical so previews don't leak their URLs into the sitemap.
-  const vercelProductionUrl =
-    process.env.VERCEL_PROJECT_PRODUCTION_URL ??
-    (process.env.VERCEL_ENV === 'production'
-      ? process.env.VERCEL_URL
-      : undefined);
-  const productionOrigin = vercelProductionUrl
-    ? `https://${vercelProductionUrl}`
-    : undefined;
-  const origin = (() => {
-    try {
-      const parsed = new URL(request.url).origin;
-      // Ignore localhost in non-dev environments — fall back to production.
-      if (parsed.hostname === 'localhost' && productionOrigin) {
-        return productionOrigin;
-      }
-      return parsed;
-    } catch {
-      return productionOrigin ?? envConfigs.app_url;
-    }
-  })();
   return {
     locale,
-    origin,
+    siteUrl: getSiteUrl(),
     title: m['landing.seo.title']({}, opts),
     description: m['landing.seo.description']({}, opts),
     ogAlt: m['landing.seo.og_alt']({}, opts),
@@ -90,8 +65,8 @@ export function buildHomeHead(
   options: { canonicalPath: string } = { canonicalPath: '/' }
 ) {
   if (!loaderData) return {};
-  const { locale, origin, title, description, ogAlt, faq } = loaderData;
-  const baseUrl = origin || envConfigs.app_url;
+  const { locale, siteUrl, title, description, ogAlt, faq } = loaderData;
+  const baseUrl = siteUrl;
 
   const urlFor = (loc: string) =>
     localizeUrl(`${baseUrl}${options.canonicalPath}`, {

@@ -77,11 +77,6 @@ export function FooterWithBigText() {
           href: '/pricing',
           native: true,
         },
-        {
-          label: m['landing.footer.popular.blog'](),
-          href: '/blog',
-          native: true,
-        },
       ],
     },
   ];

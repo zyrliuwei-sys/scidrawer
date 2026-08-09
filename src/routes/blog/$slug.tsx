@@ -3,7 +3,7 @@ import { MDXProvider } from '@mdx-js/react';
 import { ArrowLeft, Calendar } from 'lucide-react';
 
 import { Link } from '@/core/i18n/navigation';
-import { envConfigs } from '@/config';
+import { envConfigs, getSiteUrl } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { getLocale, localizeUrl } from '@/paraglide/runtime.js';
 import { Footer } from '@/blocks/footer';
@@ -25,7 +25,7 @@ export const Route = createFileRoute('/blog/$slug')({
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const { locale, post } = loaderData;
-    const canonical = localizeUrl(`${envConfigs.app_url}/blog/${post.slug}`, {
+    const canonical = localizeUrl(`${getSiteUrl()}/blog/${post.slug}`, {
       locale: locale as any,
     }).href;
     return {

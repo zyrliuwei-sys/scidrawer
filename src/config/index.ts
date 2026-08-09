@@ -1,5 +1,5 @@
 export const AUTH_SECRET_PLACEHOLDER =
-  'shipany-dev-secret-change-in-production';
+  'scidrawer-dev-secret-change-in-production';
 
 // Isomorphic env access:
 // - Public (client-visible) vars are VITE_-prefixed and read from
@@ -16,8 +16,13 @@ const publicEnv = (key: string) => metaEnv[key] ?? procEnv[key];
 export const envConfigs: Record<string, string> = {
   // App (public)
   app_url: publicEnv('VITE_APP_URL') ?? 'http://localhost:3000',
-  app_name: publicEnv('VITE_APP_NAME') ?? 'ShipAny',
-  app_description: publicEnv('VITE_APP_DESCRIPTION') ?? 'Ship your SaaS faster',
+  // The canonical public origin for SEO documents. Keep this separate from
+  // `app_url` so deployment-preview and local URLs are never indexed.
+  site_url: publicEnv('VITE_SITE_URL') ?? 'https://scidrawer.com',
+  app_name: publicEnv('VITE_APP_NAME') ?? 'SciDrawer',
+  app_description:
+    publicEnv('VITE_APP_DESCRIPTION') ??
+    'AI scientific figures for papers, posters, and presentations.',
   app_logo: publicEnv('VITE_APP_LOGO') ?? '/logo.svg',
 
   // Database
@@ -81,3 +86,12 @@ export const envConfigs: Record<string, string> = {
   // Locale (public)
   locale: publicEnv('VITE_DEFAULT_LOCALE') ?? 'en',
 };
+
+/** The normalized public origin used in canonical URLs, sitemap, and Schema. */
+export function getSiteUrl(): string {
+  try {
+    return new URL(envConfigs.site_url).origin;
+  } catch {
+    return 'https://scidrawer.com';
+  }
+}

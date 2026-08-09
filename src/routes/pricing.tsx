@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { envConfigs } from '@/config';
+import { getSiteUrl } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { getLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 import { FAQ } from '@/blocks/faq';
@@ -20,7 +20,7 @@ export const Route = createFileRoute('/pricing')({
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const urlFor = (loc: string) =>
-      localizeUrl(`${envConfigs.app_url}/pricing`, {
+      localizeUrl(`${getSiteUrl()}/pricing`, {
         locale: loc as (typeof locales)[number],
       }).href;
     return {

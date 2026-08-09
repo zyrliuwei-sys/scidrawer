@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useRouterState } from '@tanstack/react-router';
 
 /**
- * ShipAny Code preview bridge — when this app runs inside the sandbox
+ * Sandbox preview bridge — when this app runs inside the sandbox
  * preview iframe, report route changes and the links clickable on the
  * current page to the parent window (its URL bar + route dropdown follow
  * along). A no-op outside an iframe, so production deployments are
@@ -21,7 +21,7 @@ export function SandboxPreviewBridge() {
       }
     };
 
-    post({ type: 'shipany-preview:navigate', path: href });
+    post({ type: 'scidrawer-preview:navigate', path: href });
 
     // Same-origin links present in the rendered page — collected twice so
     // async content (data-driven lists) is included.
@@ -40,7 +40,7 @@ export function SandboxPreviewBridge() {
         }
       }
       if (seen.size)
-        post({ type: 'shipany-preview:links', links: [...seen].sort() });
+        post({ type: 'scidrawer-preview:links', links: [...seen].sort() });
     };
     const early = setTimeout(collect, 600);
     const late = setTimeout(collect, 2500);

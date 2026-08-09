@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { envConfigs } from '@/config';
+import { envConfigs, getSiteUrl } from '@/config';
 import { baseLocale } from '@/paraglide/runtime.js';
 import { getLocalPosts, mergePosts } from '@/content/posts';
 
@@ -14,7 +14,8 @@ export const Route = createFileRoute('/llms.txt')({
   server: {
     handlers: {
       GET: async () => {
-        const { app_url, app_name, app_description } = envConfigs;
+        const { app_name, app_description } = envConfigs;
+        const app_url = getSiteUrl();
 
         let posts = getLocalPosts(baseLocale);
         try {

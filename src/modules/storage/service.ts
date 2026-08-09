@@ -8,7 +8,7 @@ const REFERENCE_KEY_PATTERN = /^[a-f0-9]{32}\.[a-z0-9]{1,10}$/i;
 /**
  * Storage config is DB-driven (like auth/payment/email): values come from the
  * admin "Storage" settings, merged over env via getAllConfigs(). Keys mirror the
- * original ShipAny Two (`r2_*`).
+ * original provider keys (`r2_*`).
  */
 function isConfigured(configs: ConfigMap): boolean {
   return Boolean(

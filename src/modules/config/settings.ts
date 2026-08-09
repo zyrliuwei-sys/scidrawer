@@ -727,7 +727,7 @@ export function getSettings(): Setting[] {
     },
 
     // ─── Storage / R2 ────────────────────────────────────────────────
-    // Keys mirror the original ShipAny Two (`r2_*`) so existing DB config is read as-is.
+    // Keep the legacy `r2_*` keys so existing DB config is read as-is.
     {
       name: 'r2_access_key',
       title: 'Cloudflare Access Key',

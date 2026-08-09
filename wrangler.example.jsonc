@@ -5,7 +5,7 @@
 // the generated .output/server/wrangler.json; deploy with `pnpm cf:deploy`.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "shipany-tanstack",
+  "name": "scidrawer",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true,
@@ -20,7 +20,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "shipany-db",
+      "database_name": "scidrawer-db",
       "database_id": "REPLACE_WITH_OUTPUT_OF_WRANGLER_D1_CREATE",
       "migrations_dir": "drizzle",
     },

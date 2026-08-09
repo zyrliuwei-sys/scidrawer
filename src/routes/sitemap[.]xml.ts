@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { getRequestOrigin } from '@/lib/request-origin';
+import { getSiteUrl } from '@/config';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 import { getLocalPosts, mergePosts } from '@/content/posts';
 
@@ -52,8 +52,8 @@ function entryXml(e: Entry, origin: string): string {
 export const Route = createFileRoute('/sitemap.xml')({
   server: {
     handlers: {
-      GET: async ({ request }: { request: Request }) => {
-        const origin = getRequestOrigin(request);
+      GET: async () => {
+        const origin = getSiteUrl();
         const entries: Entry[] = STATIC_PATHS.map((path) => ({
           path,
           changeFrequency: path === '/blog' ? 'daily' : 'weekly',
