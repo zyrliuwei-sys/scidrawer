@@ -14,6 +14,7 @@ import { m } from '@/paraglide/messages.js';
 export const FAQ_KEYS = [
   'submit',
   'tool',
+  'graphical_abstract',
   'formats',
   'sketch',
   'style',

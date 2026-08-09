@@ -16,6 +16,9 @@ export function CTA() {
           <p className="text-muted-foreground mx-auto mt-6 max-w-4xl text-base leading-relaxed sm:text-lg">
             {m['landing.cta.subheadline']()}
           </p>
+          <p className="text-muted-foreground mx-auto mt-2 max-w-4xl text-base leading-relaxed sm:text-lg">
+            {m['landing.cta.graphical_abstract']()}
+          </p>
           <div className="mt-8 flex justify-center">
             <Link
               href="/generate"
