@@ -10,8 +10,8 @@ import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { Hero } from '@/blocks/hero';
 import { HowItWorks } from '@/blocks/how-it-works';
+import { PopularDiagramsSection } from '@/blocks/popular-diagrams';
 import { Pricing } from '@/blocks/pricing';
-import { UseCases } from '@/blocks/use-cases';
 
 export function HomeContent() {
   return (
@@ -20,7 +20,7 @@ export function HomeContent() {
       <main>
         <Hero />
         <Features />
-        <UseCases />
+        <PopularDiagramsSection />
         <HowItWorks />
         <FigureLibrarySection />
         <Pricing />

@@ -13,6 +13,8 @@ export interface FooterLink {
   label: string;
   href: string;
   external?: boolean;
+  /** Use an explicit native anchor for static SEO links. */
+  native?: boolean;
 }
 
 export interface FooterLinkColumn {
@@ -52,6 +54,36 @@ export function FooterWithBigText() {
         { label: m['landing.footer.terms'](), href: '/terms-of-service' },
       ],
     },
+    {
+      title: m['landing.footer.popular_pages'](),
+      links: [
+        {
+          label: m['landing.footer.popular.plant_cell'](),
+          href: '/plant-cell-labeled',
+          native: true,
+        },
+        {
+          label: m['landing.footer.popular.graphical_abstract'](),
+          href: '/graphical-abstract-maker',
+          native: true,
+        },
+        {
+          label: m['landing.footer.popular.scientific_diagram'](),
+          href: '/scientific-diagram-maker',
+          native: true,
+        },
+        {
+          label: m['landing.footer.popular.pricing'](),
+          href: '/pricing',
+          native: true,
+        },
+        {
+          label: m['landing.footer.popular.blog'](),
+          href: '/blog',
+          native: true,
+        },
+      ],
+    },
   ];
 
   return (
@@ -66,7 +98,7 @@ export function FooterWithBigText() {
               <ul className="mt-5 space-y-3">
                 {col.links.map((link) => (
                   <li key={link.label}>
-                    {isExternalHref(link.href) ? (
+                    {isExternalHref(link.href) || link.native ? (
                       <a
                         href={link.href}
                         className="text-sm text-neutral-400 transition-colors hover:text-neutral-100"
