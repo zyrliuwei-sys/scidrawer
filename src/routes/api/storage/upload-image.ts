@@ -38,6 +38,7 @@ const REFERENCE_IMAGE_TYPES = new Set([
   'image/webp',
   'image/gif',
 ]);
+const MAX_REFERENCE_IMAGE_COUNT = 16;
 
 async function POST({ request }: { request: Request }) {
   const limited = enforceMinIntervalRateLimit(request, {
@@ -47,16 +48,26 @@ async function POST({ request }: { request: Request }) {
   if (limited) return limited;
 
   try {
-    const auth = getAuth();
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) return respErr('Unauthorized');
+    const isReferenceUpload =
+      new URL(request.url).searchParams.get('purpose') === 'reference';
+
+    // Guests can prepare reference images before committing to a generation.
+    // All other upload use cases remain authenticated, and the client opens
+    // its sign-in dialog if a guest tries to generate.
+    if (!isReferenceUpload) {
+      const auth = getAuth();
+      const session = await auth.api.getSession({ headers: request.headers });
+      if (!session?.user) return respErr('Unauthorized');
+    }
 
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
     if (!files.length) return respErr('No files provided');
-
-    const isReferenceUpload =
-      new URL(request.url).searchParams.get('purpose') === 'reference';
+    if (isReferenceUpload && files.length > MAX_REFERENCE_IMAGE_COUNT) {
+      return respErr(
+        `You can upload up to ${MAX_REFERENCE_IMAGE_COUNT} reference images at a time`
+      );
+    }
     const storage = await getStorage();
     const storageConfigs = await getAllConfigs();
     const origin = new URL(request.url).origin;
