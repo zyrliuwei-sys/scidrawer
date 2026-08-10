@@ -1,11 +1,24 @@
+import { useState, type FormEvent } from 'react';
 import { motion } from 'motion/react';
 
-import { Link } from '@/core/i18n/navigation';
+import { Link, useRouter } from '@/core/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
+import { Button } from '@/components/ui/button';
 import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
+import { Textarea } from '@/components/ui/textarea';
 
 export function Hero() {
+  const router = useRouter();
+  const [prompt, setPrompt] = useState('');
+
+  const startGeneration = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedPrompt = prompt.trim();
+    if (trimmedPrompt.length < 3) return;
+    router.push(`/generate?prompt=${encodeURIComponent(trimmedPrompt)}`);
+  };
+
   return (
     <section
       aria-labelledby="hero-title"
@@ -22,12 +35,41 @@ export function Hero() {
         <p className="text-muted-foreground max-w-xl py-8 text-center text-base md:text-left md:text-lg">
           {m['landing.hero.subheadline']()}
         </p>
-        <div className="flex flex-col items-center gap-6 sm:flex-row">
+        <form
+          className="border-border/80 bg-background/90 mb-6 w-full max-w-2xl rounded-2xl border p-2 shadow-[0_16px_45px_-26px_rgba(15,23,42,0.45)] backdrop-blur-sm"
+          onSubmit={startGeneration}
+        >
+          <label className="sr-only" htmlFor="research-figure-brief">
+            {m['landing.hero.prompt_label']()}
+          </label>
+          <Textarea
+            id="research-figure-brief"
+            className="min-h-20 resize-none border-0 bg-transparent px-3 py-2.5 text-sm shadow-none focus-visible:border-0 focus-visible:ring-0"
+            onChange={(event) => setPrompt(event.target.value)}
+            placeholder={m['landing.hero.prompt_placeholder']()}
+            required
+            value={prompt}
+          />
+          <div className="border-border/70 flex flex-col gap-2 border-t px-1 pt-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-muted-foreground px-2 text-xs">
+              {m['landing.hero.prompt_hint']()}
+            </p>
+            <Button
+              className="h-9 px-4"
+              disabled={prompt.trim().length < 3}
+              type="submit"
+            >
+              {m['landing.hero.prompt_submit']()}
+            </Button>
+          </div>
+        </form>
+
+        <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
           <HoverBorderGradient
             as={Link}
             href="/generate"
             containerClassName="rounded-sm"
-            className="bg-foreground text-background rounded-sm px-4 py-2 text-sm font-medium shadow-2xl"
+            className="bg-foreground text-background rounded-sm px-4 py-2 text-sm font-medium"
           >
             {m['landing.hero.cta']()}
           </HoverBorderGradient>

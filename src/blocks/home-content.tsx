@@ -12,6 +12,7 @@ import { Hero } from '@/blocks/hero';
 import { HowItWorks } from '@/blocks/how-it-works';
 import { PopularDiagramsSection } from '@/blocks/popular-diagrams';
 import { Pricing } from '@/blocks/pricing';
+import { ResearchFigureGuide } from '@/blocks/research-figure-guide';
 
 export function HomeContent() {
   return (
@@ -22,6 +23,7 @@ export function HomeContent() {
         <Features />
         <PopularDiagramsSection />
         <HowItWorks />
+        <ResearchFigureGuide />
         <FigureLibrarySection />
         <Pricing />
         <FAQ />

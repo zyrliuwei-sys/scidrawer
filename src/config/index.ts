@@ -18,7 +18,7 @@ export const envConfigs: Record<string, string> = {
   app_url: publicEnv('VITE_APP_URL') ?? 'http://localhost:3000',
   // The canonical public origin for SEO documents. Keep this separate from
   // `app_url` so deployment-preview and local URLs are never indexed.
-  site_url: publicEnv('VITE_SITE_URL') ?? 'https://scidrawer.com',
+  site_url: publicEnv('VITE_SITE_URL') ?? 'https://www.scidrawer.com',
   app_name: publicEnv('VITE_APP_NAME') ?? 'SciDrawer',
   app_description:
     publicEnv('VITE_APP_DESCRIPTION') ??
