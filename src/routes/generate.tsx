@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type FormEvent,
 } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useSession } from '@/core/auth/client';
+import { signIn, useSession } from '@/core/auth/client';
 import { Link } from '@/core/i18n/navigation';
 import { apiGet, apiPost, apiPostForm } from '@/lib/api-client';
 import { getUuid } from '@/lib/hash';
@@ -31,7 +32,9 @@ import {
 } from '@/lib/image-credit-cost';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
+import { localizeHref } from '@/paraglide/runtime.js';
 import { useImagePreview } from '@/hooks/use-image-preview';
+import { usePublicConfig } from '@/hooks/use-public-config';
 import {
   Sidebar,
   SidebarBody,
@@ -48,20 +51,14 @@ import {
   type PreviewImage,
 } from '@/components/image-preview-panel';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 import {
@@ -235,6 +232,7 @@ type ActiveGenerationSession = {
 };
 
 const ACTIVE_GENERATION_STORAGE_KEY = 'scidrawer.active-image-generation.v1';
+const GUEST_PROMPT_STORAGE_KEY = 'scidrawer.guest-image-prompt.v1';
 
 async function pollTask(
   taskId: string,
@@ -403,6 +401,25 @@ function clearActiveGenerationSession() {
   window.sessionStorage.removeItem(ACTIVE_GENERATION_STORAGE_KEY);
 }
 
+function persistGuestPrompt(prompt: string) {
+  try {
+    window.sessionStorage.setItem(GUEST_PROMPT_STORAGE_KEY, prompt);
+  } catch {
+    // Private browsing can disallow sessionStorage. The sign-in flow itself
+    // should still work when preserving the draft is unavailable.
+  }
+}
+
+function takeGuestPrompt() {
+  try {
+    const prompt = window.sessionStorage.getItem(GUEST_PROMPT_STORAGE_KEY);
+    window.sessionStorage.removeItem(GUEST_PROMPT_STORAGE_KEY);
+    return prompt?.trim() ? prompt : null;
+  } catch {
+    return null;
+  }
+}
+
 function waitForNextPoll(milliseconds: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
     const timer = window.setTimeout(resolve, milliseconds);
@@ -518,6 +535,10 @@ function GeneratePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewRetryToken, setPreviewRetryToken] = useState(0);
   const [registrationPromptOpen, setRegistrationPromptOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isSigningIn, setIsSigningIn] = useState(false);
   // The state machine keeps the real provider task visible while it runs.
   const [genState, dispatchGen] = useReducer(generateReducer, initialState);
   // Start with the history canvas closed so the workspace is unobstructed.
@@ -526,6 +547,9 @@ function GeneratePage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const pollingAbortRef = useRef<AbortController | null>(null);
   const queryClient = useQueryClient();
+  const publicConfigQuery = usePublicConfig();
+  const emailEnabled = publicConfigQuery.data?.email_auth_enabled !== 'false';
+  const googleEnabled = publicConfigQuery.data?.google_auth_enabled === 'true';
   const historyQuery = useInfiniteQuery({
     queryKey: ['ai-image-history'],
     initialPageParam: 1,
@@ -551,6 +575,12 @@ function GeneratePage() {
   useEffect(() => {
     if (starterPrompt) setPrompt(starterPrompt);
   }, [starterPrompt]);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    const savedPrompt = takeGuestPrompt();
+    if (!starterPrompt && savedPrompt) setPrompt(savedPrompt);
+  }, [session?.user, starterPrompt]);
 
   const completeTask = (
     taskId: string,
@@ -779,6 +809,8 @@ function GeneratePage() {
   const handleSubmit = async () => {
     if (!canSubmit) return;
     if (!session?.user) {
+      persistGuestPrompt(prompt);
+      setLoginError('');
       setRegistrationPromptOpen(true);
       return;
     }
@@ -862,6 +894,67 @@ function GeneratePage() {
         pollingAbortRef.current = null;
       }
       if (!controller.signal.aborted) setIsGenerating(false);
+    }
+  };
+
+  const handleEmailSignIn = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginError('');
+
+    if (!loginEmail.trim() || !loginPassword) {
+      setLoginError(m['common.sign.credentials_required']());
+      return;
+    }
+
+    setIsSigningIn(true);
+    try {
+      const result: any = await signIn.email({
+        email: loginEmail.trim(),
+        password: loginPassword,
+      });
+      if (result.error) {
+        setLoginError(
+          result.error.message || m['common.sign.sign_in_failed']()
+        );
+        return;
+      }
+
+      persistGuestPrompt(prompt);
+      // Reload with the new session cookie before returning to the workspace.
+      window.location.assign(localizeHref('/generate'));
+    } catch (error) {
+      setLoginError(
+        error instanceof Error
+          ? error.message
+          : m['common.sign.sign_in_failed']()
+      );
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    persistGuestPrompt(prompt);
+    setLoginError('');
+    setIsSigningIn(true);
+    try {
+      const result: any = await signIn.social({
+        provider: 'google',
+        callbackURL: '/generate',
+      });
+      if (result?.error) {
+        setLoginError(
+          result.error.message || m['common.sign.sign_in_failed']()
+        );
+        setIsSigningIn(false);
+      }
+    } catch (error) {
+      setLoginError(
+        error instanceof Error
+          ? error.message
+          : m['common.sign.sign_in_failed']()
+      );
+      setIsSigningIn(false);
     }
   };
 
@@ -1289,39 +1382,105 @@ function GeneratePage() {
 
       <Dialog
         open={registrationPromptOpen}
-        onOpenChange={setRegistrationPromptOpen}
+        onOpenChange={(open) => {
+          setRegistrationPromptOpen(open);
+          if (!open) setLoginError('');
+        }}
       >
-        <DialogContent className="overflow-hidden p-0 sm:max-w-[27rem]">
-          <div className="border-b border-slate-100 bg-[linear-gradient(135deg,#f8fafc_0%,#eef2ff_100%)] px-6 pt-7 pb-5">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)]">
-              <Wand2 className="size-5" />
-            </div>
-          </div>
-          <DialogHeader className="px-6 pt-1">
-            <p className="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
-              {m['generator.auth_gate.eyebrow']()}
+        <DialogContent className="gap-5 p-6 sm:max-w-[25rem]">
+          <DialogTitle className="pr-8 text-center text-xl font-semibold tracking-tight text-slate-900">
+            {m['common.sign.sign_in_title']()}
+          </DialogTitle>
+
+          <form className="space-y-4" onSubmit={handleEmailSignIn}>
+            {loginError && (
+              <p
+                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                role="alert"
+              >
+                {loginError}
+              </p>
+            )}
+
+            {googleEnabled && (
+              <>
+                <Button
+                  className="h-11 w-full text-base"
+                  disabled={isSigningIn}
+                  onClick={handleGoogleSignIn}
+                  type="button"
+                  variant="outline"
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="size-5"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  {m['common.sign.google_sign_in']()}
+                </Button>
+                {emailEnabled && (
+                  <div className="flex items-center gap-3 text-xs text-slate-400">
+                    <span className="h-px flex-1 bg-slate-200" />
+                    <span>{m['common.sign.or']()}</span>
+                    <span className="h-px flex-1 bg-slate-200" />
+                  </div>
+                )}
+              </>
+            )}
+
+            {emailEnabled && (
+              <>
+                <label className="block space-y-1.5 text-sm font-medium text-slate-800">
+                  <span>{m['common.sign.email_title']()}</span>
+                  <Input
+                    autoComplete="email"
+                    className="h-11 bg-white px-3"
+                    onChange={(event) => setLoginEmail(event.target.value)}
+                    placeholder={m['common.sign.email_placeholder']()}
+                    required
+                    type="email"
+                    value={loginEmail}
+                  />
+                </label>
+                <label className="block space-y-1.5 text-sm font-medium text-slate-800">
+                  <span>{m['common.sign.password_title']()}</span>
+                  <Input
+                    autoComplete="current-password"
+                    className="h-11 bg-white px-3"
+                    onChange={(event) => setLoginPassword(event.target.value)}
+                    placeholder={m['common.sign.password_placeholder']()}
+                    required
+                    type="password"
+                    value={loginPassword}
+                  />
+                </label>
+                <Button
+                  className="h-11 w-full text-base"
+                  disabled={isSigningIn}
+                  type="submit"
+                >
+                  {isSigningIn ? '...' : m['common.sign.sign_in_title']()}
+                </Button>
+              </>
+            )}
+
+            <p className="pt-1 text-center text-sm text-slate-500">
+              {m['common.sign.no_account']()}{' '}
+              <Link
+                className="font-medium text-slate-900 underline underline-offset-4"
+                href="/sign-up?callbackUrl=/generate"
+                onClick={() => persistGuestPrompt(prompt)}
+              >
+                {m['common.sign.sign_up_title']()}
+              </Link>
             </p>
-            <DialogTitle className="pt-1 text-xl font-semibold tracking-tight text-slate-900">
-              {m['generator.auth_gate.title']()}
-            </DialogTitle>
-            <DialogDescription className="max-w-sm leading-6 text-slate-600">
-              {m['generator.auth_gate.description']()}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-2 border-slate-100 bg-slate-50/70 px-6 py-4 sm:items-center">
-            <Link
-              href="/sign-in?callbackUrl=/generate"
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
-            >
-              {m['generator.auth_gate.sign_in']()}
-            </Link>
-            <Link
-              href="/sign-up?callbackUrl=/generate"
-              className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-medium text-white shadow-[0_8px_18px_rgba(15,23,42,0.16)] transition-colors hover:bg-slate-800"
-            >
-              {m['generator.auth_gate.sign_up']()}
-            </Link>
-          </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

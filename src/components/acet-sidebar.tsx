@@ -72,7 +72,7 @@ export function Sidebar({
       {/* `shrink-0` so flex parents don't collapse main to 0 when the
           sidebar's inner content is narrower than its container. Width is
           driven by the motion-animated inner div, not by `w-full`. */}
-      <div className={cn('flex h-full shrink-0 flex-row', className)}>
+      <div className={cn('flex shrink-0 flex-row self-stretch', className)}>
         {children}
       </div>
     </SidebarContext.Provider>
