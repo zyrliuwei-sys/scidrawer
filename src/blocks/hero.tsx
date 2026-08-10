@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react';
+import { Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 
-import { Link, useRouter } from '@/core/i18n/navigation';
+import { useRouter } from '@/core/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { Button } from '@/components/ui/button';
-import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
 export function Hero() {
   const router = useRouter();
@@ -27,58 +27,43 @@ export function Hero() {
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <h1
           id="hero-title"
-          className="text-center text-2xl font-bold tracking-tight md:text-left md:text-4xl lg:text-6xl"
+          className="text-left text-2xl font-bold tracking-tight md:text-4xl lg:text-6xl"
         >
           {m['landing.hero.headline']()}
         </h1>
 
-        <p className="text-muted-foreground max-w-xl py-8 text-center text-base md:text-left md:text-lg">
+        <p className="text-muted-foreground max-w-xl py-8 text-left text-base md:text-lg">
           {m['landing.hero.subheadline']()}
         </p>
-        <form
-          className="border-border/80 bg-background/90 mb-6 w-full max-w-2xl rounded-2xl border p-2 shadow-[0_16px_45px_-26px_rgba(15,23,42,0.45)] backdrop-blur-sm"
-          onSubmit={startGeneration}
-        >
-          <label className="sr-only" htmlFor="research-figure-brief">
-            {m['landing.hero.prompt_label']()}
-          </label>
-          <Textarea
-            id="research-figure-brief"
-            className="min-h-20 resize-none border-0 bg-transparent px-3 py-2.5 text-sm shadow-none focus-visible:border-0 focus-visible:ring-0"
-            onChange={(event) => setPrompt(event.target.value)}
-            placeholder={m['landing.hero.prompt_placeholder']()}
-            required
-            value={prompt}
-          />
-          <div className="border-border/70 flex flex-col gap-2 border-t px-1 pt-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-muted-foreground px-2 text-xs">
-              {m['landing.hero.prompt_hint']()}
-            </p>
-            <Button
-              className="h-9 px-4"
-              disabled={prompt.trim().length < 3}
-              type="submit"
-            >
-              {m['landing.hero.prompt_submit']()}
-            </Button>
-          </div>
-        </form>
+        <div className="w-full max-w-[620px]">
+          <form onSubmit={startGeneration}>
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+              <label className="sr-only" htmlFor="research-figure-brief">
+                {m['landing.hero.prompt_label']()}
+              </label>
+              <Input
+                id="research-figure-brief"
+                aria-label={m['landing.hero.prompt_label']()}
+                className="border-border bg-card placeholder:text-muted-foreground hover:border-foreground/25 focus-visible:border-primary h-[62px] rounded-[18px] px-6 text-base shadow-[0_12px_24px_rgba(15,23,42,0.08)] transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-px hover:shadow-[0_16px_30px_rgba(15,23,42,0.12)] focus-visible:-translate-y-px focus-visible:shadow-[0_18px_34px_rgba(15,23,42,0.14)] focus-visible:ring-0 dark:shadow-black/25"
+                onChange={(event) => setPrompt(event.target.value)}
+                placeholder={m['landing.hero.prompt_placeholder']()}
+                required
+                value={prompt}
+              />
+              <Button
+                className="h-[62px] w-full shrink-0 rounded-[18px] px-8 text-base font-semibold shadow-[0_14px_28px_rgba(15,23,42,0.2)] transition-[background-color,box-shadow,transform] duration-300 hover:-translate-y-px hover:shadow-[0_18px_32px_rgba(15,23,42,0.24)] active:translate-y-0 sm:w-auto"
+                disabled={prompt.trim().length < 3}
+                type="submit"
+              >
+                {m['landing.hero.prompt_submit']()}
+              </Button>
+            </div>
+          </form>
 
-        <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
-          <HoverBorderGradient
-            as={Link}
-            href="/generate"
-            containerClassName="rounded-sm"
-            className="bg-foreground text-background rounded-sm px-4 py-2 text-sm font-medium"
-          >
-            {m['landing.hero.cta']()}
-          </HoverBorderGradient>
-          <Link
-            href="/#features"
-            className="text-foreground rounded-sm bg-transparent px-4 py-2"
-          >
-            {m['landing.hero.secondary']()}
-          </Link>
+          <p className="text-muted-foreground mt-6 inline-flex items-center gap-2 text-sm font-medium">
+            <Sparkles className="text-primary size-4" aria-hidden="true" />
+            {m['landing.hero.prompt_hint']()}
+          </p>
         </div>
         <LandingImages />
       </div>
@@ -88,7 +73,7 @@ export function Hero() {
 
 export function LandingImages() {
   return (
-    <div className="relative min-h-40 w-full pt-20 perspective-distant sm:min-h-80 md:min-h-100 lg:min-h-200">
+    <div className="relative mt-20 min-h-40 w-full pt-20 perspective-distant sm:min-h-80 md:mt-24 md:min-h-100 lg:min-h-200">
       <motion.div
         initial={{ opacity: 0, y: -100 }}
         whileInView={{ opacity: 1, y: 0 }}

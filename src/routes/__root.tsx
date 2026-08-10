@@ -16,6 +16,7 @@ import { getQueryClient } from '@/lib/query-client';
 import { getLocale } from '@/paraglide/runtime.js';
 import { Ads } from '@/components/analytics/ads';
 import { GoogleAnalytics } from '@/components/analytics/google-analytics';
+import { MicrosoftClarity } from '@/components/analytics/microsoft-clarity';
 import { Plausible } from '@/components/analytics/plausible';
 import { GoogleOneTap } from '@/components/google-one-tap';
 import { SandboxPreviewBridge } from '@/components/sandbox-preview-bridge';
@@ -79,6 +80,7 @@ function RootComponent() {
         <SandboxPreviewBridge />
         <Toaster position="top-center" richColors />
         <GoogleOneTap />
+        <MicrosoftClarity />
         {analytics?.gaId ? (
           <GoogleAnalytics measurementId={analytics.gaId} />
         ) : null}
