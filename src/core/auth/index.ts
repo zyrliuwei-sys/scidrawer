@@ -107,6 +107,38 @@ function getSocialSignature(configs: Record<string, string>) {
 }
 
 /**
+ * A site's apex domain and its `www` hostname are commonly redirected to one
+ * another by the hosting provider. Treat them as a pair for the CSRF origin
+ * allow-list so an old `app_url` value cannot lock visitors out after a
+ * canonical-domain change. This does not allow arbitrary subdomains.
+ */
+function addAppOriginAliases(origins: string[], appUrl: string) {
+  try {
+    const url = new URL(appUrl);
+    origins.push(url.origin);
+
+    const hostname = url.hostname.toLowerCase();
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      /^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)
+    ) {
+      return;
+    }
+
+    const alias = new URL(url.origin);
+    alias.hostname = hostname.startsWith('www.')
+      ? hostname.slice('www.'.length)
+      : `www.${hostname}`;
+    origins.push(alias.origin);
+  } catch {
+    // Keep better-auth's existing handling for a malformed admin setting.
+    origins.push(appUrl);
+  }
+}
+
+/**
  * Build the configured email provider from admin settings.
  * Returns null if the chosen provider is not fully configured.
  */
@@ -202,7 +234,7 @@ export function getAuth(configs?: Record<string, string>) {
     secret: envConfigs.auth_secret,
     trustedOrigins: (request) => {
       const origins: string[] = [];
-      if (appUrl) origins.push(appUrl);
+      if (appUrl) addAppOriginAliases(origins, appUrl);
       // AUTH_TRUSTED_ORIGINS: comma-separated extra origins. Entries starting
       // with a dot are hostname-suffix wildcards (`.e2b.app` trusts every
       // per-sandbox preview domain, e.g. https://3000-<id>.e2b.app); anything
