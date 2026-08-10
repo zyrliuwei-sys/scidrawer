@@ -1042,5 +1042,10 @@
   "landing.seo.description": "科学图表制作器：面向论文、预印本与会议展示，一句话描述、草图或参考图，一键转成期刊级机制图、图形摘要与会议海报。中英双语，$9/月起。",
   "landing.seo.og_alt": "SciDrawer AI —— 科研海报生成器，AI 生成期刊级论文插图、机制图与会议海报",
   "landing.faq.tool.question": "为什么 SciDrawer 算得上一台科学图表制作器？",
-  "landing.faq.tool.answer": "一台合格的科学图表制作器要同时做好四件事：可读标注、一致的箭头语言、跨图统一的配色、以及期刊级分辨率。SciDrawer 同一工作台里就能全部做到——你描述机制、上传草图或参考图，同一台科学图表制作器就能一次性出机制图、图形摘要和会议海报，不用切换工具。"
+  "landing.faq.tool.answer": "一台合格的科学图表制作器要同时做好四件事：可读标注、一致的箭头语言、跨图统一的配色、以及期刊级分辨率。SciDrawer 同一工作台里就能全部做到——你描述机制、上传草图或参考图，同一台科学图表制作器就能一次性出机制图、图形摘要和会议海报，不用切换工具。",
+  "generator.auth_gate.eyebrow": "还差一步",
+  "generator.auth_gate.title": "注册后即可生成图片",
+  "generator.auth_gate.description": "注册或登录后，即可将你的科研描述生成高质量图示。",
+  "generator.auth_gate.sign_in": "我已有账号",
+  "generator.auth_gate.sign_up": "创建账号"
 }

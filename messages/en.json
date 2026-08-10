@@ -1042,5 +1042,10 @@
   "landing.seo.description": "Scientific diagram maker — turn text, sketches, or reference images into journal-grade figures, mechanism pathways, and graphical abstracts from $9/mo.",
   "landing.seo.og_alt": "SciDrawer AI — scientific poster generator for journal-grade figures, abstracts, and conference posters",
   "landing.faq.tool.question": "What makes SciDrawer a good scientific diagram maker?",
-  "landing.faq.tool.answer": "A scientific diagram maker has to handle four things at once: legible labels, consistent arrow semantics, a coherent palette across figures, and journal-grade resolution. SciDrawer does all four inside one workspace — you describe the mechanism, drop in a sketch, or match a reference figure, and the same scientific diagram maker produces pathway diagrams, graphical abstracts, and conference posters without switching tools."
+  "landing.faq.tool.answer": "A scientific diagram maker has to handle four things at once: legible labels, consistent arrow semantics, a coherent palette across figures, and journal-grade resolution. SciDrawer does all four inside one workspace — you describe the mechanism, drop in a sketch, or match a reference figure, and the same scientific diagram maker produces pathway diagrams, graphical abstracts, and conference posters without switching tools.",
+  "generator.auth_gate.eyebrow": "One last step",
+  "generator.auth_gate.title": "Create an account to generate",
+  "generator.auth_gate.description": "Sign up or log in to turn your scientific brief into a polished figure.",
+  "generator.auth_gate.sign_in": "I already have an account",
+  "generator.auth_gate.sign_up": "Create an account"
 }

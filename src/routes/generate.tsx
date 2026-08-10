@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useSession } from '@/core/auth/client';
+import { Link } from '@/core/i18n/navigation';
 import { apiGet, apiPost, apiPostForm } from '@/lib/api-client';
 import { getUuid } from '@/lib/hash';
 import {
@@ -28,6 +30,7 @@ import {
   resolveImageBillingResolution,
 } from '@/lib/image-credit-cost';
 import { cn } from '@/lib/utils';
+import { m } from '@/paraglide/messages.js';
 import { useImagePreview } from '@/hooks/use-image-preview';
 import {
   Sidebar,
@@ -45,6 +48,14 @@ import {
   type PreviewImage,
 } from '@/components/image-preview-panel';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -483,6 +494,7 @@ function mergeImages(
 
 function GeneratePage() {
   const { prompt: starterPrompt } = Route.useSearch();
+  const { data: session } = useSession();
   const [prompt, setPrompt] = useState(starterPrompt ?? '');
   const [aspect, setAspect] = useState<(typeof IMAGE_SIZES)[number]>('1:1');
   const [resolution, setResolution] =
@@ -505,6 +517,7 @@ function GeneratePage() {
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewRetryToken, setPreviewRetryToken] = useState(0);
+  const [registrationPromptOpen, setRegistrationPromptOpen] = useState(false);
   // The state machine keeps the real provider task visible while it runs.
   const [genState, dispatchGen] = useReducer(generateReducer, initialState);
   // Start with the history canvas closed so the workspace is unobstructed.
@@ -765,6 +778,10 @@ function GeneratePage() {
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    if (!session?.user) {
+      setRegistrationPromptOpen(true);
+      return;
+    }
 
     // Capture the submitted configuration so edits made during generation do
     // not alter the result record that is added to history.
@@ -1269,6 +1286,44 @@ function GeneratePage() {
           </div>
         }
       />
+
+      <Dialog
+        open={registrationPromptOpen}
+        onOpenChange={setRegistrationPromptOpen}
+      >
+        <DialogContent className="overflow-hidden p-0 sm:max-w-[27rem]">
+          <div className="border-b border-slate-100 bg-[linear-gradient(135deg,#f8fafc_0%,#eef2ff_100%)] px-6 pt-7 pb-5">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)]">
+              <Wand2 className="size-5" />
+            </div>
+          </div>
+          <DialogHeader className="px-6 pt-1">
+            <p className="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+              {m['generator.auth_gate.eyebrow']()}
+            </p>
+            <DialogTitle className="pt-1 text-xl font-semibold tracking-tight text-slate-900">
+              {m['generator.auth_gate.title']()}
+            </DialogTitle>
+            <DialogDescription className="max-w-sm leading-6 text-slate-600">
+              {m['generator.auth_gate.description']()}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2 border-slate-100 bg-slate-50/70 px-6 py-4 sm:items-center">
+            <Link
+              href="/sign-in?callbackUrl=/generate"
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
+            >
+              {m['generator.auth_gate.sign_in']()}
+            </Link>
+            <Link
+              href="/sign-up?callbackUrl=/generate"
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-medium text-white shadow-[0_8px_18px_rgba(15,23,42,0.16)] transition-colors hover:bg-slate-800"
+            >
+              {m['generator.auth_gate.sign_up']()}
+            </Link>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
