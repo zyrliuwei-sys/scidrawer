@@ -48,6 +48,7 @@ export const Route = createRootRoute({
       meta: [
         { charSet: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'msvalidate.01', content: 'B0CDD13837D509DA74D7BD8E5CD0629C' },
         { title: envConfigs.app_name },
         { name: 'description', content: envConfigs.app_description },
       ],
