@@ -128,6 +128,24 @@ export function FooterWithBigText() {
                 className="border-neutral-700 text-neutral-200 hover:bg-white/5 hover:text-neutral-50"
               />
             </div>
+            <a
+              href="https://www.agenthunter.io?utm_source=badge&utm_medium=embed&utm_campaign=scidrawer%20ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 font-sans no-underline transition-all duration-200 hover:border-gray-500 hover:bg-gray-800"
+            >
+              <img
+                src="https://www.agenthunter.io/logo-dark.svg"
+                alt="AgentHunter Badge"
+                className="size-10"
+              />
+              <span className="flex flex-col">
+                <span className="text-xs text-gray-400">AgentHunter</span>
+                <span className="text-sm font-semibold text-gray-50">
+                  Featured AI Agent
+                </span>
+              </span>
+            </a>
           </div>
         </div>
 
