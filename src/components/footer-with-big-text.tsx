@@ -1,6 +1,5 @@
 import { Link } from '@/core/i18n/navigation';
 import { m } from '@/paraglide/messages.js';
-import { LocaleSelector } from '@/components/locale-selector';
 
 /**
  * Off-site URLs render as plain <a>; internal paths use the locale-aware Link.
@@ -122,17 +121,11 @@ export function FooterWithBigText() {
             <p className="mt-4 max-w-sm text-sm leading-6 text-neutral-400">
               {m['landing.footer.brand_description']()}
             </p>
-            <div className="mt-7">
-              <LocaleSelector
-                variant="pill"
-                className="border-neutral-700 text-neutral-200 hover:bg-white/5 hover:text-neutral-50"
-              />
-            </div>
             <a
               href="https://www.agenthunter.io?utm_source=badge&utm_medium=embed&utm_campaign=scidrawer%20ai"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 font-sans no-underline transition-all duration-200 hover:border-gray-500 hover:bg-gray-800"
+              className="mt-7 inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 font-sans no-underline transition-all duration-200 hover:border-gray-500 hover:bg-gray-800"
             >
               <img
                 src="https://www.agenthunter.io/logo-dark.svg"
@@ -145,6 +138,20 @@ export function FooterWithBigText() {
                   Featured AI Agent
                 </span>
               </span>
+            </a>
+            <a
+              href="https://aiagentsdirectory.com/agent/scidrawer-ai"
+              target="_blank"
+              rel="noopener"
+              title="Discover SciDrawer AI on AI Agents Directory"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://aiagentsdirectory.com/featured-badge.svg?v=2024"
+                alt="SciDrawer AI - Featured on AI Agents Directory"
+                width={200}
+                height={50}
+              />
             </a>
           </div>
         </div>
