@@ -236,6 +236,19 @@ export function FooterWithBigText() {
                 className="block h-[58px] w-[265px]"
               />
             </a>
+            <a
+              href="https://bestsky.tools?utm_source=badge"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://assets.bestsky.tools/badges/featured-light.svg"
+                alt="Featured on BestskyTools"
+                width={150}
+                className="block w-[150px]"
+              />
+            </a>
           </div>
         </div>
 
