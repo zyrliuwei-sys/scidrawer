@@ -221,6 +221,21 @@ export function FooterWithBigText() {
                 className="block h-[60px] w-auto"
               />
             </a>
+            <a
+              href="https://auraplusplus.com/projects/scidrawer-ai"
+              target="_blank"
+              rel="noopener"
+              title="View this project on Aura++"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://auraplusplus.com/images/badges/featured-on-dark.svg"
+                alt="Featured on Aura++"
+                width={265}
+                height={58}
+                className="block h-[58px] w-[265px]"
+              />
+            </a>
           </div>
         </div>
 
