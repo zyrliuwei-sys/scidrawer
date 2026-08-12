@@ -181,6 +181,20 @@ export function FooterWithBigText() {
                 className="block w-[250px]"
               />
             </a>
+            <a
+              href="https://startupfa.me/s/scidrawer.com-748?utm_source=www.scidrawer.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://startupfa.me/badges/featured-badge.webp"
+                alt="SciDrawer AI - Featured on Startup Fame"
+                width={171}
+                height={54}
+                className="block h-[54px] w-[171px]"
+              />
+            </a>
           </div>
         </div>
 
