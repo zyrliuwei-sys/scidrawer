@@ -153,6 +153,21 @@ export function FooterWithBigText() {
                 height={50}
               />
             </a>
+            <a
+              href="https://toolbit.ai/ai-tool/scidrawer-com?ref=embed"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-tb-secret="0e74bd9e85bb53116ed0cd60803434592a4fa9d136d069f5"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://cdn.toolbit.ai/external-share-img/dark-featured.svg"
+                alt="Featured on ToolBit.ai - Scidrawer AI"
+                width={250}
+                height={76}
+                className="block h-[76px] w-[250px]"
+              />
+            </a>
           </div>
         </div>
 
