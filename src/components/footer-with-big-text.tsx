@@ -195,6 +195,32 @@ export function FooterWithBigText() {
                 className="block h-[54px] w-[171px]"
               />
             </a>
+            <a
+              href="https://turbo0.com/item/scidrawer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://img.turbo0.com/badge-listed-light.svg"
+                alt="Listed on Turbo0"
+                height={54}
+                className="block h-[54px] w-auto"
+              />
+            </a>
+            <a
+              href="https://toolrain.com/item/scidrawer-ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://toolrain.com/badges/badge-listed-dark.svg"
+                alt="Listed on ToolRain"
+                height={60}
+                className="block h-[60px] w-auto"
+              />
+            </a>
           </div>
         </div>
 
