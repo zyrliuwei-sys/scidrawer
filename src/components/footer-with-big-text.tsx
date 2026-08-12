@@ -168,6 +168,19 @@ export function FooterWithBigText() {
                 className="block h-[76px] w-[250px]"
               />
             </a>
+            <a
+              href="https://fazier.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=dark"
+                alt="Fazier badge"
+                width={250}
+                className="block w-[250px]"
+              />
+            </a>
           </div>
         </div>
 
