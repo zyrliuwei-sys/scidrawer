@@ -249,6 +249,20 @@ export function FooterWithBigText() {
                 className="block w-[150px]"
               />
             </a>
+            <a
+              href="https://dofollow.tools"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://dofollow.tools/badge/badge_dark.svg"
+                alt="Featured on Dofollow.Tools"
+                width={200}
+                height={54}
+                className="block h-[54px] w-[200px]"
+              />
+            </a>
           </div>
         </div>
 
