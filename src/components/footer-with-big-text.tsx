@@ -263,6 +263,34 @@ export function FooterWithBigText() {
                 className="block h-[54px] w-[200px]"
               />
             </a>
+            <a
+              href="https://wired.business"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://wired.business/badge0-dark.svg"
+                alt="Featured on Wired Business"
+                width={200}
+                height={54}
+                className="block h-[54px] w-[200px]"
+              />
+            </a>
+            <a
+              href="https://goodaitools.com/ai/scidrawer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://goodaitools.com/assets/images/badge-dark.png"
+                alt="Good AI Tools"
+                height={54}
+                loading="lazy"
+                className="block h-[54px] w-auto"
+              />
+            </a>
           </div>
         </div>
 
