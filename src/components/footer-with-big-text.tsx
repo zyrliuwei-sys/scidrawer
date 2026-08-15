@@ -291,6 +291,49 @@ export function FooterWithBigText() {
                 className="block h-[54px] w-auto"
               />
             </a>
+            <a
+              href="https://domainrank.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://domainrank.app/api/badge/scidrawer.com?theme=dark"
+                alt="scidrawer.com Domain Rating"
+                width={360}
+                height={80}
+                loading="lazy"
+                className="block h-auto w-full max-w-[360px]"
+              />
+            </a>
+            <a
+              href="https://findly.tools/scidrawer-ai?utm_source=scidrawer-ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://findly.tools/badges/findly-tools-badge-light.svg"
+                alt="Featured on Findly.tools"
+                width={175}
+                height={55}
+                className="block h-[55px] w-[175px]"
+              />
+            </a>
+            <a
+              href="https://productwing.com/product/scidrawer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 block w-fit"
+            >
+              <img
+                src="https://productwing.com/assets/images/badge-dark.png"
+                alt="Product Wing"
+                height={54}
+                loading="lazy"
+                className="block h-[54px] w-auto"
+              />
+            </a>
           </div>
         </div>
 
