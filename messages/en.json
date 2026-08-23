@@ -1057,5 +1057,12 @@
   "landing.seo.description": "Create research figures with SciDrawer, an AI scientific diagram maker for mechanisms, pathways, graphical abstracts, sketches, and reference images.",
   "landing.seo.og_alt": "SciDrawer AI — scientific poster generator for journal-grade figures, abstracts, and conference posters",
   "landing.faq.tool.question": "What makes SciDrawer a good scientific diagram maker?",
-  "landing.faq.tool.answer": "A scientific diagram maker has to handle four things at once: legible labels, consistent arrow semantics, a coherent palette across figures, and journal-grade resolution. SciDrawer does all four inside one workspace — you describe the mechanism, drop in a sketch, or match a reference figure, and the same scientific diagram maker produces pathway diagrams, graphical abstracts, and conference posters without switching tools."
+  "landing.faq.tool.answer": "A scientific diagram maker has to handle four things at once: legible labels, consistent arrow semantics, a coherent palette across figures, and journal-grade resolution. SciDrawer does all four inside one workspace — you describe the mechanism, drop in a sketch, or match a reference figure, and the same scientific diagram maker produces pathway diagrams, graphical abstracts, and conference posters without switching tools.",
+  "generator.trial.granted": "Your first image is free — generation has started.",
+  "generator.paywall.title": "Your free image has been used",
+  "generator.paywall.description": "Purchase credits to keep creating scientific figures.",
+  "generator.paywall.starter_title": "Starter Credits — $5",
+  "generator.paywall.starter_description": "340 render credits, valid for one year.",
+  "generator.paywall.purchase": "Purchase credits",
+  "generator.paywall.view_plans": "View all plans"
 }

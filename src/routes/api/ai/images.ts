@@ -170,6 +170,7 @@ async function POST({ request }: { request: Request }) {
       return respData({
         id: task.id,
         providerTaskId: result.taskId,
+        welcomeGeneration: task.welcomeGeneration === true,
         // Keep EvoLink's status vocabulary (`pending`, `processing`,
         // `completed`, `failed`) so the client can consume the provider's
         // documented task shape directly.

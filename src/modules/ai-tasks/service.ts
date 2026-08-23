@@ -1,7 +1,8 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 
+import { AIMediaType } from '@/core/ai/types';
 import { db } from '@/core/db';
-import { aiTask } from '@/config/db/schema.postgres';
+import { aiTask, user } from '@/config/db/schema.postgres';
 import { consume, revoke } from '@/modules/credits/service';
 import { getUuid } from '@/lib/hash';
 
@@ -29,6 +30,24 @@ export async function createTask(params: {
     params;
 
   return db().transaction(async (tx: any) => {
+    // The first image task that reaches the provider is a one-time welcome
+    // generation. Failed/cancelled attempts do not consume that benefit, so a
+    // new user is not charged for an upstream outage.
+    let welcomeGeneration = false;
+    if (mediaType === AIMediaType.IMAGE && costCredits && costCredits > 0) {
+      // Serialize the entitlement check per user. PostgreSQL/MySQL honor the
+      // row lock; SQLite serializes writes within a transaction.
+      const userLockQuery = tx
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
+      await (userLockQuery.for ? userLockQuery.for('update') : userLockQuery);
+      welcomeGeneration =
+        (await hasUsedWelcomeImageGeneration(tx, userId)) === false;
+    }
+    const effectiveCostCredits = welcomeGeneration ? 0 : (costCredits ?? 0);
+
     // 1. Insert task
     const taskData: any = {
       id: getUuid(),
@@ -39,16 +58,19 @@ export async function createTask(params: {
       prompt,
       options: options ? JSON.stringify(options) : null,
       status: AITaskStatus.PENDING,
-      costCredits: costCredits || 0,
+      costCredits: effectiveCostCredits,
+      taskInfo: welcomeGeneration
+        ? JSON.stringify({ welcomeImageGeneration: true })
+        : null,
     };
 
     const [task] = await tx.insert(aiTask).values(taskData).returning();
 
     // 2. Consume credits if cost > 0
-    if (costCredits && costCredits > 0) {
+    if (effectiveCostCredits > 0) {
       const result = await consume({
         userId,
-        credits: costCredits,
+        credits: effectiveCostCredits,
         scene: 'ai_task',
         description: `AI ${mediaType} generation`,
         metadata: JSON.stringify({ taskId: task.id }),
@@ -70,8 +92,33 @@ export async function createTask(params: {
       }
     }
 
-    return task;
+    return { ...task, welcomeGeneration };
   });
+}
+
+/**
+ * A pending, processing, or successful image task means the welcome image
+ * has already been claimed. Keeping failed/cancelled tasks out of this check
+ * makes the free first result resilient to provider failures.
+ */
+async function hasUsedWelcomeImageGeneration(tx: any, userId: string) {
+  const [result] = await tx
+    .select({ total: count() })
+    .from(aiTask)
+    .where(
+      and(
+        eq(aiTask.userId, userId),
+        eq(aiTask.mediaType, AIMediaType.IMAGE),
+        inArray(aiTask.status, [
+          AITaskStatus.PENDING,
+          AITaskStatus.PROCESSING,
+          AITaskStatus.SUCCESS,
+        ]),
+        isNull(aiTask.deletedAt)
+      )
+    );
+
+  return Number(result?.total ?? 0) > 0;
 }
 
 /**

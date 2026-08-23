@@ -26,10 +26,6 @@ import { signIn, useSession } from '@/core/auth/client';
 import { Link } from '@/core/i18n/navigation';
 import { apiGet, apiPost, apiPostForm } from '@/lib/api-client';
 import { getUuid } from '@/lib/hash';
-import {
-  calculateImageCreditCost,
-  resolveImageBillingResolution,
-} from '@/lib/image-credit-cost';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { localizeHref } from '@/paraglide/runtime.js';
@@ -50,8 +46,18 @@ import {
   type ImageHistoryCopy,
   type PreviewImage,
 } from '@/components/image-preview-panel';
+import {
+  PaymentProviderModal,
+  type PaymentProvider,
+} from '@/components/payment-provider-modal';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,6 +91,14 @@ const MODELS = [
     name: 'GPT Image 2',
   },
 ] as const;
+
+const PAYMENT_PROVIDERS: PaymentProvider[] = [
+  'stripe',
+  'creem',
+  'paypal',
+  'alipay',
+  'wechat',
+];
 
 // Aceternity-style nav links — only the active page (Generate) is
 // shown. Examples / Showcases are reachable via in-page anchors on
@@ -186,6 +200,8 @@ type EvoLinkImageResult =
 
 type GenerationTaskResponse = {
   id: string;
+  /** True when this task used the signed-in user's one-time welcome image. */
+  welcomeGeneration?: boolean;
   status:
     | 'pending'
     | 'processing'
@@ -233,6 +249,8 @@ type ActiveGenerationSession = {
 
 const ACTIVE_GENERATION_STORAGE_KEY = 'scidrawer.active-image-generation.v1';
 const GUEST_PROMPT_STORAGE_KEY = 'scidrawer.guest-image-prompt.v1';
+const GUEST_AUTO_GENERATE_STORAGE_KEY =
+  'scidrawer.guest-auto-image-generation.v1';
 
 async function pollTask(
   taskId: string,
@@ -327,7 +345,9 @@ async function retryRequest<T>(run: () => Promise<T>): Promise<T> {
       return await run();
     } catch (error) {
       lastError = error;
-      if (attempt === 0) {
+      // A missing balance is a deterministic billing result, not a transient
+      // generation failure. Surface the purchase dialog immediately.
+      if (attempt === 0 && !isInsufficientCreditsError(error)) {
         await new Promise((resolve) =>
           setTimeout(resolve, GENERATION_RETRY_DELAY_MS)
         );
@@ -335,6 +355,13 @@ async function retryRequest<T>(run: () => Promise<T>): Promise<T> {
     }
   }
   throw lastError;
+}
+
+function isInsufficientCreditsError(error: unknown) {
+  return (
+    error instanceof Error &&
+    error.message.toLowerCase().includes('insufficient credits')
+  );
 }
 
 function readActiveGenerationSession(): ActiveGenerationSession | null {
@@ -410,6 +437,15 @@ function persistGuestPrompt(prompt: string) {
   }
 }
 
+function persistGuestAutoGeneration() {
+  try {
+    window.sessionStorage.setItem(GUEST_AUTO_GENERATE_STORAGE_KEY, '1');
+  } catch {
+    // The saved prompt remains available even when private browsing blocks
+    // session storage, so the user can still submit it manually after login.
+  }
+}
+
 function takeGuestPrompt() {
   try {
     const prompt = window.sessionStorage.getItem(GUEST_PROMPT_STORAGE_KEY);
@@ -417,6 +453,17 @@ function takeGuestPrompt() {
     return prompt?.trim() ? prompt : null;
   } catch {
     return null;
+  }
+}
+
+function takeGuestAutoGeneration() {
+  try {
+    const shouldGenerate =
+      window.sessionStorage.getItem(GUEST_AUTO_GENERATE_STORAGE_KEY) === '1';
+    window.sessionStorage.removeItem(GUEST_AUTO_GENERATE_STORAGE_KEY);
+    return shouldGenerate;
+  } catch {
+    return false;
   }
 }
 
@@ -535,6 +582,12 @@ function GeneratePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewRetryToken, setPreviewRetryToken] = useState(0);
   const [registrationPromptOpen, setRegistrationPromptOpen] = useState(false);
+  const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
+  const [paymentPromptOpen, setPaymentPromptOpen] = useState(false);
+  const [paymentProviderOpen, setPaymentProviderOpen] = useState(false);
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
+  const [loadingPaymentProvider, setLoadingPaymentProvider] =
+    useState<PaymentProvider | null>(null);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -548,8 +601,20 @@ function GeneratePage() {
   const pollingAbortRef = useRef<AbortController | null>(null);
   const queryClient = useQueryClient();
   const publicConfigQuery = usePublicConfig();
+  const publicConfigs = publicConfigQuery.data ?? {};
   const emailEnabled = publicConfigQuery.data?.email_auth_enabled !== 'false';
   const googleEnabled = publicConfigQuery.data?.google_auth_enabled === 'true';
+  const enabledPaymentProviders = useMemo(
+    () =>
+      PAYMENT_PROVIDERS.filter(
+        (provider) => publicConfigs[`${provider}_enabled`] === 'true'
+      ),
+    [publicConfigs]
+  );
+  const defaultPaymentProvider =
+    (publicConfigs.default_payment_provider as PaymentProvider | undefined) ||
+    enabledPaymentProviders[0] ||
+    'stripe';
   const historyQuery = useInfiniteQuery({
     queryKey: ['ai-image-history'],
     initialPageParam: 1,
@@ -579,7 +644,11 @@ function GeneratePage() {
   useEffect(() => {
     if (!session?.user) return;
     const savedPrompt = takeGuestPrompt();
+    const shouldGenerate = takeGuestAutoGeneration();
     if (!starterPrompt && savedPrompt) setPrompt(savedPrompt);
+    if (shouldGenerate && (savedPrompt || starterPrompt)) {
+      setShouldAutoGenerate(true);
+    }
   }, [session?.user, starterPrompt]);
 
   const completeTask = (
@@ -722,11 +791,6 @@ function GeneratePage() {
 
   const canSubmit =
     prompt.trim().length >= 3 && !isGenerating && !isUploadingReferences;
-  const generationCreditCost = calculateImageCreditCost({
-    resolution: resolveImageBillingResolution({ size: aspect, resolution }),
-    quality,
-    referenceCount: referenceImages.length,
-  });
 
   const handleReferenceImages = async (
     event: ChangeEvent<HTMLInputElement>
@@ -840,6 +904,9 @@ function GeneratePage() {
           image_urls: referenceImages.map((image) => image.url),
         })
       );
+      if (task.welcomeGeneration) {
+        toast.success(m['generator.trial.granted']());
+      }
       const activeSession: ActiveGenerationSession = {
         taskId: task.id,
         prompt: submittedPrompt,
@@ -881,6 +948,12 @@ function GeneratePage() {
       });
     } catch (error) {
       if (controller.signal.aborted) return;
+      if (isInsufficientCreditsError(error)) {
+        clearActiveGenerationSession();
+        dispatchGen({ type: 'reset' });
+        setPaymentPromptOpen(true);
+        return;
+      }
       const message =
         error instanceof Error ? error.message : 'Image generation failed';
       clearActiveGenerationSession();
@@ -896,6 +969,51 @@ function GeneratePage() {
       if (!controller.signal.aborted) setIsGenerating(false);
     }
   };
+
+  const startCheckout = async (provider: PaymentProvider) => {
+    setIsStartingCheckout(true);
+    setLoadingPaymentProvider(provider);
+    try {
+      const checkout = await apiPost<{ checkout_url?: string }>(
+        '/api/payment/checkout',
+        {
+          product_id: 'payg_starter',
+          payment_provider: provider,
+          // Restore the draft after the hosted checkout returns. The next
+          // generation stays a deliberate user action after credits arrive.
+          redirect: `/generate?prompt=${encodeURIComponent(prompt.trim())}`,
+        }
+      );
+      if (!checkout.checkout_url) throw new Error('Checkout failed');
+      window.location.assign(checkout.checkout_url);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Checkout failed');
+      setLoadingPaymentProvider(null);
+    } finally {
+      setIsStartingCheckout(false);
+    }
+  };
+
+  const continueToPayment = () => {
+    const chooseProvider =
+      publicConfigs.select_payment_enabled === 'true' &&
+      enabledPaymentProviders.length > 1;
+    if (chooseProvider) {
+      setPaymentPromptOpen(false);
+      setPaymentProviderOpen(true);
+      return;
+    }
+    void startCheckout(defaultPaymentProvider);
+  };
+
+  // A prompt submitted before authentication is the welcome generation. Wait
+  // until the fresh session and restored draft are both ready, then submit it
+  // once without asking the user to click Generate again.
+  useEffect(() => {
+    if (!shouldAutoGenerate || !session?.user || !canSubmit) return;
+    setShouldAutoGenerate(false);
+    void handleSubmit();
+  }, [shouldAutoGenerate, session?.user, canSubmit, handleSubmit]);
 
   const handleEmailSignIn = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -920,6 +1038,7 @@ function GeneratePage() {
       }
 
       persistGuestPrompt(prompt);
+      persistGuestAutoGeneration();
       // Reload with the new session cookie before returning to the workspace.
       window.location.assign(localizeHref('/generate'));
     } catch (error) {
@@ -935,6 +1054,7 @@ function GeneratePage() {
 
   const handleGoogleSignIn = async () => {
     persistGuestPrompt(prompt);
+    persistGuestAutoGeneration();
     setLoginError('');
     setIsSigningIn(true);
     try {
@@ -1475,7 +1595,10 @@ function GeneratePage() {
               <Link
                 className="font-medium text-slate-900 underline underline-offset-4"
                 href="/sign-up?callbackUrl=/generate"
-                onClick={() => persistGuestPrompt(prompt)}
+                onClick={() => {
+                  persistGuestPrompt(prompt);
+                  persistGuestAutoGeneration();
+                }}
               >
                 {m['common.sign.sign_up_title']()}
               </Link>
@@ -1483,6 +1606,67 @@ function GeneratePage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={paymentPromptOpen}
+        onOpenChange={(open) => {
+          setPaymentPromptOpen(open);
+          if (!open) setLoadingPaymentProvider(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{m['generator.paywall.title']()}</DialogTitle>
+            <DialogDescription>
+              {m['generator.paywall.description']()}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900">
+              {m['generator.paywall.starter_title']()}
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              {m['generator.paywall.starter_description']()}
+            </p>
+          </div>
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Link
+              href="/pricing"
+              className="inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+            >
+              {m['generator.paywall.view_plans']()}
+            </Link>
+            <Button
+              type="button"
+              disabled={isStartingCheckout}
+              onClick={continueToPayment}
+            >
+              {isStartingCheckout
+                ? m['common.pricing.processing']()
+                : m['generator.paywall.purchase']()}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <PaymentProviderModal
+        open={paymentProviderOpen}
+        onOpenChange={(open) => {
+          setPaymentProviderOpen(open);
+          if (!open) setLoadingPaymentProvider(null);
+        }}
+        providers={
+          enabledPaymentProviders.length
+            ? enabledPaymentProviders
+            : [defaultPaymentProvider]
+        }
+        loadingProvider={loadingPaymentProvider}
+        onSelect={(provider) => void startCheckout(provider)}
+        planName={m['generator.paywall.starter_title']()}
+        price="$5"
+      />
     </div>
   );
 }

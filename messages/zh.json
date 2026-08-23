@@ -1057,5 +1057,12 @@
   "landing.seo.description": "使用 SciDrawer 生成适合投稿的科研配图：AI 可根据机制、通路、图形摘要、草图和参考图创建清晰的研究图示。",
   "landing.seo.og_alt": "SciDrawer AI —— 科研海报生成器，AI 生成期刊级论文插图、机制图与会议海报",
   "landing.faq.tool.question": "为什么 SciDrawer 算得上一台科学图表制作器？",
-  "landing.faq.tool.answer": "一台合格的科学图表制作器要同时做好四件事：可读标注、一致的箭头语言、跨图统一的配色、以及期刊级分辨率。SciDrawer 同一工作台里就能全部做到——你描述机制、上传草图或参考图，同一台科学图表制作器就能一次性出机制图、图形摘要和会议海报，不用切换工具。"
+  "landing.faq.tool.answer": "一台合格的科学图表制作器要同时做好四件事：可读标注、一致的箭头语言、跨图统一的配色、以及期刊级分辨率。SciDrawer 同一工作台里就能全部做到——你描述机制、上传草图或参考图，同一台科学图表制作器就能一次性出机制图、图形摘要和会议海报，不用切换工具。",
+  "generator.trial.granted": "已赠送首次图片生成，正在开始生成。",
+  "generator.paywall.title": "免费生成次数已使用",
+  "generator.paywall.description": "购买积分后即可继续生成科研图片。",
+  "generator.paywall.starter_title": "入门积分包 — $5",
+  "generator.paywall.starter_description": "包含 340 生成积分，有效期一年。",
+  "generator.paywall.purchase": "购买积分",
+  "generator.paywall.view_plans": "查看全部套餐"
 }
