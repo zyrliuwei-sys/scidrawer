@@ -23,7 +23,7 @@ import {
 import { toast } from 'sonner';
 
 import { signIn, useSession } from '@/core/auth/client';
-import { Link } from '@/core/i18n/navigation';
+import { Link, useRouter } from '@/core/i18n/navigation';
 import { apiGet, apiPost, apiPostForm } from '@/lib/api-client';
 import { getUuid } from '@/lib/hash';
 import { cn } from '@/lib/utils';
@@ -31,16 +31,19 @@ import { m } from '@/paraglide/messages.js';
 import { getLocale, localizeHref } from '@/paraglide/runtime.js';
 import { useImagePreview } from '@/hooks/use-image-preview';
 import { usePublicConfig } from '@/hooks/use-public-config';
-import {
-  Sidebar,
-  SidebarBody,
-  SidebarLink,
-  SidebarLogo,
-} from '@/components/acet-sidebar';
+import { FigpadWorkspaceSidebar } from '@/components/generator/figpad-workspace-sidebar';
+import { FlowchartWorkspace } from '@/components/generator/flowchart-workspace';
 import {
   GenerationSession,
   type GenerationSessionCopy,
 } from '@/components/generator/generation-session';
+import { PlotWorkspace } from '@/components/generator/plot-workspace';
+import { SvgConverterWorkspace } from '@/components/generator/svg-converter-workspace';
+import { SvgEditorWorkspace } from '@/components/generator/svg-editor-workspace';
+import {
+  WorkspaceModeTabs,
+  type GeneratorWorkspaceMode,
+} from '@/components/generator/workspace-mode-tabs';
 import {
   ImagePreviewPanel,
   type ImageHistoryCopy,
@@ -98,23 +101,6 @@ const PAYMENT_PROVIDERS: PaymentProvider[] = [
   'paypal',
   'alipay',
   'wechat',
-];
-
-// Aceternity-style nav links — only the active page (Generate) is
-// shown. Examples / Showcases are reachable via in-page anchors on
-// the main work area; Settings / Logout / Sign-in live outside the
-// workspace chrome.
-const NAV_LINKS = [
-  {
-    label: 'Image Generate',
-    href: '/generate',
-    icon: <Wand2 className="size-5" />,
-  },
-  {
-    label: 'History',
-    href: '#generation-history',
-    icon: <History className="size-5" />,
-  },
 ];
 
 const HISTORY_PAGE_SIZE = 24;
@@ -601,7 +587,10 @@ function mergeImages(
 function GeneratePage() {
   const { prompt: starterPrompt } = Route.useSearch();
   const { data: session } = useSession();
+  const router = useRouter();
   const [prompt, setPrompt] = useState(starterPrompt ?? '');
+  const [workspaceMode, setWorkspaceMode] =
+    useState<GeneratorWorkspaceMode>('illustration');
   const [selectedExampleId, setSelectedExampleId] = useState<string | null>(
     null
   );
@@ -616,10 +605,8 @@ function GeneratePage() {
     useState<ParameterMenu | null>(null);
   const [referenceImages, setReferenceImages] = useState<ReferenceImage[]>([]);
   const [isUploadingReferences, setIsUploadingReferences] = useState(false);
-  // Sidebar state — collapsible (Aceternity style). Currently the page is
-  // always rendered as the "Generate" workspace, so the active link is fixed
-  // to `/generate`.
   const [open, setOpen] = useState(true);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
   // Fresh results appear immediately. Completed results from previous visits
   // are loaded from the user's persisted task history below.
   const [recentImages, setRecentImages] = useState<GeneratedImage[]>([]);
@@ -680,6 +667,16 @@ function GeneratePage() {
   const images = useMemo(
     () => mergeImages(recentImages, historyImages),
     [recentImages, historyImages]
+  );
+  const sidebarHistory = useMemo(
+    () =>
+      images.map((image) => ({
+        id: image.id,
+        prompt: image.prompt,
+        createdAt: image.createdAt,
+        src: image.src,
+      })),
+    [images]
   );
 
   useEffect(() => {
@@ -1214,41 +1211,78 @@ function GeneratePage() {
     toast.success('Prompt added — refine it or click Generate.');
   };
 
+  const activeSidebarTool =
+    workspaceMode === 'svg-converter'
+      ? 'svg-converter'
+      : workspaceMode === 'svg-editor'
+        ? 'svg-editor'
+        : 'generate';
+  const showingFigureWorkspace =
+    workspaceMode === 'illustration' ||
+    workspaceMode === 'flowchart' ||
+    workspaceMode === 'plot';
+  const workspaceHeading =
+    workspaceMode === 'svg-converter'
+      ? 'SVG Converter'
+      : workspaceMode === 'svg-editor'
+        ? 'SVG Editor'
+        : workspaceMode === 'flowchart'
+          ? 'Scientific Flowchart Builder'
+          : workspaceMode === 'plot'
+            ? 'Scientific Plot Builder'
+            : 'AI Scientific Figure Generator';
+  const workspaceDescription =
+    workspaceMode === 'svg-converter'
+      ? 'Upload a high-contrast PNG, JPG, BMP, or WebP image and turn it into editable SVG paths.'
+      : workspaceMode === 'svg-editor'
+        ? 'Open, edit, preview, and export SVG artwork without leaving your workspace.'
+        : workspaceMode === 'flowchart'
+          ? 'Turn a concise process into a clean, editable scientific flowchart.'
+          : workspaceMode === 'plot'
+            ? 'Paste CSV data to make a clear scientific plot you can export.'
+            : 'Use SciDrawer AI as a scientific diagram maker for research visuals you can refine and export.';
+
+  const selectSidebarTool = (tool: typeof activeSidebarTool | 'poster') => {
+    if (tool === 'poster') {
+      router.push('/scientific-poster-maker');
+      return;
+    }
+    closeHistoryPanel();
+    if (tool === 'generate') {
+      setWorkspaceMode('illustration');
+      return;
+    }
+    setWorkspaceMode(tool);
+  };
+
   return (
-    <div className="flex min-h-screen w-full min-w-0 flex-1 flex-col overflow-hidden text-neutral-900 md:flex-row">
-      {/* Aceternity-style collapsible icon sidebar. */}
-      <Sidebar open={open} setOpen={setOpen} className="hidden md:flex">
-        <SidebarBody className="justify-between gap-10">
-          <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
-            {open && <SidebarLogo logo="SciDrawer AI" href="/" />}
-            <div className="mt-12 flex flex-col gap-2">
-              {NAV_LINKS.map((link, idx) => (
-                <SidebarLink
-                  key={idx}
-                  link={link}
-                  active={
-                    link.href === '#generation-history'
-                      ? isPanelOpen
-                      : !isPanelOpen
-                  }
-                  onClick={(event) => {
-                    if (link.href === '#generation-history') {
-                      event.preventDefault();
-                      openHistoryPanel();
-                      return;
-                    }
-                    event.preventDefault();
-                    closeHistoryPanel();
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </SidebarBody>
-      </Sidebar>
+    <div className="flex min-h-screen w-full min-w-0 flex-1 flex-col overflow-hidden bg-[#fbfaf8] text-neutral-900 md:flex-row">
+      <FigpadWorkspaceSidebar
+        open={open}
+        onOpenChange={setOpen}
+        activeTool={activeSidebarTool}
+        onToolSelect={selectSidebarTool}
+        historyExpanded={historyExpanded}
+        onHistoryExpandedChange={setHistoryExpanded}
+        history={sidebarHistory}
+        historyLoading={historyQuery.isLoading}
+        onHistoryItemSelect={(item) => {
+          selectPreviewImage(item.id);
+          openHistoryPanel();
+        }}
+        signedIn={Boolean(session?.user)}
+        accountLabel={session?.user?.name || session?.user?.email}
+        onAccountClick={() => {
+          if (session?.user) {
+            router.push('/settings/profile');
+            return;
+          }
+          setRegistrationPromptOpen(true);
+        }}
+      />
 
       {/* Main work panel (mirrors figpad's main > section) */}
-      <main className="min-h-screen min-w-0 flex-1">
+      <main className="min-h-screen min-w-0 flex-1 bg-[#fbfaf8]">
         <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:hidden">
           <a
             href="/"
@@ -1279,328 +1313,351 @@ function GeneratePage() {
             {isPanelOpen ? 'Close history' : 'History'}
           </Button>
         </div>
-        <section className="bg-background min-h-screen overflow-hidden">
+        <section className="min-h-screen overflow-hidden bg-[#fbfaf8]">
           {/* Page title and subtitle */}
           <div className="mx-auto w-full max-w-[980px] px-4 pt-20 pb-6 text-center md:pt-48 xl:pt-56">
             <h1 className="text-[36px] leading-[45px] font-semibold text-slate-900">
-              AI Scientific Figure Generator
+              {workspaceHeading}
             </h1>
             <p className="mx-auto mt-4 text-sm text-[#415365]">
-              Use SciDrawer AI as a scientific diagram maker for research
-              visuals you can refine and export.
+              {workspaceDescription}
             </p>
+            {showingFigureWorkspace && (
+              <div className="mt-7">
+                <WorkspaceModeTabs
+                  activeMode={workspaceMode}
+                  onModeChange={setWorkspaceMode}
+                />
+              </div>
+            )}
           </div>
 
           {/* Generator card — full width inside the main column. The right
               side of the viewport is reserved for the always-on preview
               panel (rendered as a sibling of <main> below). */}
           <div className="mx-auto mt-8 w-full max-w-[980px] px-4 pb-12">
-            {genState.status === 'idle' ? (
-              <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_2px_12px_rgba(30,38,47,0.06)] transition-all duration-200 focus-within:border-slate-400 focus-within:shadow-[0_0_0_4px_rgba(15,23,42,0.06),0_16px_42px_rgba(30,38,47,0.14)] hover:-translate-y-0.5 hover:shadow-[0_16px_42px_rgba(30,38,47,0.14)]">
-                {/* Hidden file input — triggered by the image attach button */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.webp,.gif"
-                  multiple
-                  className="hidden"
-                  onChange={handleReferenceImages}
-                />
+            {workspaceMode === 'svg-converter' ? (
+              <SvgConverterWorkspace />
+            ) : workspaceMode === 'svg-editor' ? (
+              <SvgEditorWorkspace />
+            ) : workspaceMode === 'flowchart' ? (
+              <FlowchartWorkspace />
+            ) : workspaceMode === 'plot' ? (
+              <PlotWorkspace />
+            ) : (
+              <>
+                {genState.status === 'idle' ? (
+                  <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_2px_12px_rgba(30,38,47,0.06)] transition-all duration-200 focus-within:border-slate-400 focus-within:shadow-[0_0_0_4px_rgba(15,23,42,0.06),0_16px_42px_rgba(30,38,47,0.14)] hover:-translate-y-0.5 hover:shadow-[0_16px_42px_rgba(30,38,47,0.14)]">
+                    {/* Hidden file input — triggered by the image attach button */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.webp,.gif"
+                      multiple
+                      className="hidden"
+                      onChange={handleReferenceImages}
+                    />
 
-                <div className="relative">
-                  {referenceImages.length > 0 && (
-                    <div className="absolute top-4 left-5 z-10 flex max-w-[calc(100%-2.5rem)] gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                      {referenceImages.map((image) => (
-                        <div
-                          key={image.id}
-                          className="group/reference relative size-[76px] shrink-0 overflow-visible rounded-xl bg-slate-100 shadow-[0_3px_10px_rgba(15,23,42,0.14)]"
-                        >
-                          <ReferenceImagePreview
-                            name={image.name}
-                            url={image.url}
-                          />
+                    <div className="relative">
+                      {referenceImages.length > 0 && (
+                        <div className="absolute top-4 left-5 z-10 flex max-w-[calc(100%-2.5rem)] gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                          {referenceImages.map((image) => (
+                            <div
+                              key={image.id}
+                              className="group/reference relative size-[76px] shrink-0 overflow-visible rounded-xl bg-slate-100 shadow-[0_3px_10px_rgba(15,23,42,0.14)]"
+                            >
+                              <ReferenceImagePreview
+                                name={image.name}
+                                url={image.url}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeReferenceImage(image.id)}
+                                aria-label={`Remove reference image ${image.name}`}
+                                title="Remove reference image"
+                                className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-sm transition-transform hover:scale-110 hover:bg-slate-950 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                              >
+                                <X className="size-3" strokeWidth={2.5} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <Textarea
+                        ref={promptInputRef}
+                        rows={6}
+                        placeholder="Describe a scientific figure, e.g. a mitochondrial ultrastructure with cristae and mtDNA labels…"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        className={cn(
+                          'min-h-[128px] resize-none rounded-none border-0 bg-white px-5 pb-4 text-base shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
+                          referenceImages.length > 0 ? 'pt-[108px]' : 'pt-4'
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="group/imgbtn relative">
                           <button
                             type="button"
-                            onClick={() => removeReferenceImage(image.id)}
-                            aria-label={`Remove reference image ${image.name}`}
-                            title="Remove reference image"
-                            className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-sm transition-transform hover:scale-110 hover:bg-slate-950 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                            aria-label="Attach image"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploadingReferences || isGenerating}
+                            className="flex size-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            <X className="size-3" strokeWidth={2.5} />
+                            <ImageIcon className="size-4" />
                           </button>
+                          <div className="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 scale-95 rounded-md bg-[#111] px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover/imgbtn:scale-100 group-hover/imgbtn:opacity-100">
+                            <span className="absolute top-1/2 -left-1 size-2 -translate-y-1/2 rotate-45 bg-[#111]" />
+                            Add reference sketches or images
+                          </div>
                         </div>
-                      ))}
+
+                        <DropdownMenu
+                          open={openParameterMenu === 'aspect'}
+                          onOpenChange={(isOpen) =>
+                            setOpenParameterMenu(isOpen ? 'aspect' : null)
+                          }
+                        >
+                          <DropdownMenuTrigger className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2">
+                            <span className="font-medium">{aspect}</span>
+                            <ChevronDown className="size-3 opacity-50" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-32">
+                            {IMAGE_SIZES.map((ratio) => (
+                              <DropdownMenuItem
+                                key={ratio}
+                                onClick={() => {
+                                  setAspect(ratio);
+                                  setOpenParameterMenu(null);
+                                }}
+                                className="justify-between"
+                              >
+                                {ratio}
+                                {ratio === aspect && (
+                                  <Check className="size-3.5" />
+                                )}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <DropdownMenu
+                          open={openParameterMenu === 'resolution'}
+                          onOpenChange={(isOpen) =>
+                            setOpenParameterMenu(isOpen ? 'resolution' : null)
+                          }
+                        >
+                          <DropdownMenuTrigger
+                            aria-label="Select resolution"
+                            className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                          >
+                            <span className="font-medium">{resolution}</span>
+                            <ChevronDown className="size-3 opacity-50" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-28">
+                            {RESOLUTIONS.map((value) => (
+                              <DropdownMenuItem
+                                key={value}
+                                onClick={() => {
+                                  setResolution(value);
+                                  setOpenParameterMenu(null);
+                                }}
+                                className="justify-between"
+                              >
+                                {value}
+                                {value === resolution && (
+                                  <Check className="size-3.5" />
+                                )}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <DropdownMenu
+                          open={openParameterMenu === 'quality'}
+                          onOpenChange={(isOpen) =>
+                            setOpenParameterMenu(isOpen ? 'quality' : null)
+                          }
+                        >
+                          <DropdownMenuTrigger
+                            aria-label="Select generation quality"
+                            className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                          >
+                            <span className="font-medium capitalize">
+                              {quality}
+                            </span>
+                            <ChevronDown className="size-3 opacity-50" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-32">
+                            {QUALITIES.map((value) => (
+                              <DropdownMenuItem
+                                key={value}
+                                onClick={() => {
+                                  setQuality(value);
+                                  setOpenParameterMenu(null);
+                                }}
+                                className="justify-between capitalize"
+                              >
+                                {value}
+                                {value === quality && (
+                                  <Check className="size-3.5" />
+                                )}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <DropdownMenu
+                          open={openParameterMenu === 'model'}
+                          onOpenChange={(isOpen) =>
+                            setOpenParameterMenu(isOpen ? 'model' : null)
+                          }
+                        >
+                          <DropdownMenuTrigger
+                            aria-label="Select generation model"
+                            title={`Model: ${model}`}
+                            className="flex h-8 w-auto items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-600 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                          >
+                            <Box className="size-3.5 text-slate-700" />
+                            <span className="hidden sm:inline">{model}</span>
+                            <ChevronDown className="size-3.5 opacity-50" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            {MODELS.map((candidate) => (
+                              <DropdownMenuItem
+                                key={candidate.name}
+                                onClick={() => {
+                                  setModel(candidate.name);
+                                  setOpenParameterMenu(null);
+                                }}
+                                className="items-start justify-between gap-3"
+                              >
+                                <span>{candidate.name}</span>
+                                {candidate.name === model && (
+                                  <Check className="mt-0.5 size-3.5" />
+                                )}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <Button
+                          type="button"
+                          onClick={handleSubmit}
+                          disabled={!canSubmit}
+                          aria-label="Generate"
+                          title="Generate"
+                          className="size-10 rounded-[12px] bg-slate-700 p-0 text-white shadow-[0_10px_24px_rgba(30,38,47,0.18)] hover:bg-slate-800"
+                        >
+                          <Send className="size-4" />
+                        </Button>
+                      </div>
                     </div>
-                  )}
-                  <Textarea
-                    ref={promptInputRef}
-                    rows={6}
-                    placeholder="Describe a scientific figure, e.g. a mitochondrial ultrastructure with cristae and mtDNA labels…"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    className={cn(
-                      'min-h-[128px] resize-none rounded-none border-0 bg-white px-5 pb-4 text-base shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
-                      referenceImages.length > 0 ? 'pt-[108px]' : 'pt-4'
-                    )}
+                  </div>
+                ) : (
+                  <GenerationSession
+                    status={genState.status}
+                    progress={
+                      genState.status === 'generating' ? genState.progress : 0
+                    }
+                    elapsed={
+                      genState.status === 'generating' ||
+                      genState.status === 'succeeded'
+                        ? genState.elapsed
+                        : 0
+                    }
+                    prompt={prompt}
+                    image={
+                      genState.status === 'succeeded'
+                        ? retryPreviewUrl(genState.image, previewRetryToken)
+                        : undefined
+                    }
+                    errorMessage={
+                      genState.status === 'failed'
+                        ? genState.error.message
+                        : undefined
+                    }
+                    copy={SESSION_COPY}
+                    onClose={() => dispatchGen({ type: 'reset' })}
+                    onRetry={retryGeneratedPreview}
+                    onRegenerate={restartGeneration}
+                    onUseAsReference={() => {
+                      if (genState.status === 'succeeded') {
+                        useGeneratedImageAsReference(genState.image);
+                      }
+                    }}
+                    onCopyPrompt={copyCurrentPrompt}
                   />
-                </div>
+                )}
 
-                <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="group/imgbtn relative">
-                      <button
-                        type="button"
-                        aria-label="Attach image"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploadingReferences || isGenerating}
-                        className="flex size-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <ImageIcon className="size-4" />
-                      </button>
-                      <div className="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 scale-95 rounded-md bg-[#111] px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover/imgbtn:scale-100 group-hover/imgbtn:opacity-100">
-                        <span className="absolute top-1/2 -left-1 size-2 -translate-y-1/2 rotate-45 bg-[#111]" />
-                        Add reference sketches or images
-                      </div>
-                    </div>
-
-                    <DropdownMenu
-                      open={openParameterMenu === 'aspect'}
-                      onOpenChange={(isOpen) =>
-                        setOpenParameterMenu(isOpen ? 'aspect' : null)
-                      }
-                    >
-                      <DropdownMenuTrigger className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2">
-                        <span className="font-medium">{aspect}</span>
-                        <ChevronDown className="size-3 opacity-50" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-32">
-                        {IMAGE_SIZES.map((ratio) => (
-                          <DropdownMenuItem
-                            key={ratio}
-                            onClick={() => {
-                              setAspect(ratio);
-                              setOpenParameterMenu(null);
-                            }}
-                            className="justify-between"
-                          >
-                            {ratio}
-                            {ratio === aspect && <Check className="size-3.5" />}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <DropdownMenu
-                      open={openParameterMenu === 'resolution'}
-                      onOpenChange={(isOpen) =>
-                        setOpenParameterMenu(isOpen ? 'resolution' : null)
-                      }
-                    >
-                      <DropdownMenuTrigger
-                        aria-label="Select resolution"
-                        className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                      >
-                        <span className="font-medium">{resolution}</span>
-                        <ChevronDown className="size-3 opacity-50" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-28">
-                        {RESOLUTIONS.map((value) => (
-                          <DropdownMenuItem
-                            key={value}
-                            onClick={() => {
-                              setResolution(value);
-                              setOpenParameterMenu(null);
-                            }}
-                            className="justify-between"
-                          >
-                            {value}
-                            {value === resolution && (
-                              <Check className="size-3.5" />
-                            )}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <DropdownMenu
-                      open={openParameterMenu === 'quality'}
-                      onOpenChange={(isOpen) =>
-                        setOpenParameterMenu(isOpen ? 'quality' : null)
-                      }
-                    >
-                      <DropdownMenuTrigger
-                        aria-label="Select generation quality"
-                        className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                      >
-                        <span className="font-medium capitalize">
-                          {quality}
-                        </span>
-                        <ChevronDown className="size-3 opacity-50" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-32">
-                        {QUALITIES.map((value) => (
-                          <DropdownMenuItem
-                            key={value}
-                            onClick={() => {
-                              setQuality(value);
-                              setOpenParameterMenu(null);
-                            }}
-                            className="justify-between capitalize"
-                          >
-                            {value}
-                            {value === quality && (
-                              <Check className="size-3.5" />
-                            )}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <DropdownMenu
-                      open={openParameterMenu === 'model'}
-                      onOpenChange={(isOpen) =>
-                        setOpenParameterMenu(isOpen ? 'model' : null)
-                      }
-                    >
-                      <DropdownMenuTrigger
-                        aria-label="Select generation model"
-                        title={`Model: ${model}`}
-                        className="flex h-8 w-auto items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-600 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                      >
-                        <Box className="size-3.5 text-slate-700" />
-                        <span className="hidden sm:inline">{model}</span>
-                        <ChevronDown className="size-3.5 opacity-50" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        {MODELS.map((candidate) => (
-                          <DropdownMenuItem
-                            key={candidate.name}
-                            onClick={() => {
-                              setModel(candidate.name);
-                              setOpenParameterMenu(null);
-                            }}
-                            className="items-start justify-between gap-3"
-                          >
-                            <span>{candidate.name}</span>
-                            {candidate.name === model && (
-                              <Check className="mt-0.5 size-3.5" />
-                            )}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <Button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={!canSubmit}
-                      aria-label="Generate"
-                      title="Generate"
-                      className="size-10 rounded-[12px] bg-slate-700 p-0 text-white shadow-[0_10px_24px_rgba(30,38,47,0.18)] hover:bg-slate-800"
-                    >
-                      <Send className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <GenerationSession
-                status={genState.status}
-                progress={
-                  genState.status === 'generating' ? genState.progress : 0
-                }
-                elapsed={
-                  genState.status === 'generating' ||
-                  genState.status === 'succeeded'
-                    ? genState.elapsed
-                    : 0
-                }
-                prompt={prompt}
-                image={
-                  genState.status === 'succeeded'
-                    ? retryPreviewUrl(genState.image, previewRetryToken)
-                    : undefined
-                }
-                errorMessage={
-                  genState.status === 'failed'
-                    ? genState.error.message
-                    : undefined
-                }
-                copy={SESSION_COPY}
-                onClose={() => dispatchGen({ type: 'reset' })}
-                onRetry={retryGeneratedPreview}
-                onRegenerate={restartGeneration}
-                onUseAsReference={() => {
-                  if (genState.status === 'succeeded') {
-                    useGeneratedImageAsReference(genState.image);
-                  }
-                }}
-                onCopyPrompt={copyCurrentPrompt}
-              />
-            )}
-
-            <section
-              aria-labelledby="generation-examples-title"
-              className="mt-7"
-            >
-              <div className="flex items-baseline justify-between gap-4">
-                <h2
-                  id="generation-examples-title"
-                  className="text-base font-semibold text-slate-900"
+                <section
+                  aria-labelledby="generation-examples-title"
+                  className="mt-7"
                 >
-                  Examples
-                </h2>
-                <p className="text-xs text-slate-500">Click to use a prompt</p>
-              </div>
-
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                {GENERATION_EXAMPLES.map((example) => {
-                  const isSelected = selectedExampleId === example.id;
-                  return (
-                    <button
-                      key={example.id}
-                      type="button"
-                      aria-pressed={isSelected}
-                      disabled={
-                        isGenerating || genState.status === 'generating'
-                      }
-                      onClick={() => chooseGenerationExample(example)}
-                      className={cn(
-                        'group overflow-hidden rounded-xl border bg-white text-left transition-colors focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
-                        isSelected
-                          ? 'border-slate-900'
-                          : 'border-slate-200 hover:border-slate-400'
-                      )}
+                  <div className="flex items-baseline justify-between gap-4">
+                    <h2
+                      id="generation-examples-title"
+                      className="text-base font-semibold text-slate-900"
                     >
-                      <div className="aspect-[16/9] overflow-hidden bg-slate-100">
-                        <img
-                          src={example.image}
-                          alt={`${example.title} example scientific figure`}
-                          className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between gap-3 px-3 py-2.5">
-                        <h3 className="text-sm font-medium text-slate-900">
-                          {example.title}
-                        </h3>
-                        <span
+                      Examples
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Click to use a prompt
+                    </p>
+                  </div>
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    {GENERATION_EXAMPLES.map((example) => {
+                      const isSelected = selectedExampleId === example.id;
+                      return (
+                        <button
+                          key={example.id}
+                          type="button"
+                          aria-pressed={isSelected}
+                          disabled={
+                            isGenerating || genState.status === 'generating'
+                          }
+                          onClick={() => chooseGenerationExample(example)}
                           className={cn(
-                            'shrink-0 text-xs',
+                            'group overflow-hidden rounded-xl border bg-white text-left transition-colors focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
                             isSelected
-                              ? 'font-medium text-slate-900'
-                              : 'text-slate-400'
+                              ? 'border-slate-900'
+                              : 'border-slate-200 hover:border-slate-400'
                           )}
                         >
-                          {isSelected ? 'Added' : 'Use'}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
+                          <div className="aspect-[16/9] overflow-hidden bg-slate-100">
+                            <img
+                              src={example.image}
+                              alt={`${example.title} example scientific figure`}
+                              className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                            />
+                          </div>
+                          <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                            <h3 className="text-sm font-medium text-slate-900">
+                              {example.title}
+                            </h3>
+                            <span
+                              className={cn(
+                                'shrink-0 text-xs',
+                                isSelected
+                                  ? 'font-medium text-slate-900'
+                                  : 'text-slate-400'
+                              )}
+                            >
+                              {isSelected ? 'Added' : 'Use'}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              </>
+            )}
           </div>
         </section>
       </main>

@@ -561,3 +561,31 @@ export type NewTicketMessage = typeof ticketMessage.$inferInsert;
 
 // ─── Custom tables ───────────────────────────────────────────────────────────
 // Add your own tables below this line.
+
+// ─── Figure Studio ─────────────────────────────────────────────────────────
+
+export const figureProject = table(
+  'figure_project',
+  {
+    id: varchar191('id').primaryKey(),
+    userId: varchar191('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }).notNull().default(''),
+    mode: varchar('mode', { length: 50 }).notNull().default('illustration'),
+    prompt: longtext('prompt').notNull(),
+    settings: longtext('settings').notNull(),
+    referenceImages: longtext('reference_images').notNull(),
+    latestTaskId: varchar191('latest_task_id'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp('deleted_at'),
+  },
+  (table) => [
+    index('idx_figure_project_user_updated').on(table.userId, table.updatedAt),
+    index('idx_figure_project_user_deleted').on(table.userId, table.deletedAt),
+  ]
+);
+
+export type FigureProject = typeof figureProject.$inferSelect;
+export type NewFigureProject = typeof figureProject.$inferInsert;
