@@ -17,7 +17,6 @@ export type PopularDiagramItem = {
 type PopularDiagramsProps = {
   eyebrow: string;
   title: string;
-  description: string;
   items: PopularDiagramItem[];
 };
 
@@ -29,7 +28,6 @@ type PopularDiagramsProps = {
 export function PopularDiagrams({
   eyebrow,
   title,
-  description,
   items,
 }: PopularDiagramsProps) {
   return (
@@ -43,7 +41,7 @@ export function PopularDiagrams({
         className="pointer-events-none absolute -top-28 -right-28 size-80 rounded-full border border-emerald-800/10 bg-emerald-400/10 blur-3xl dark:border-emerald-200/10 dark:bg-emerald-300/5"
       />
       <div className="relative mx-auto max-w-[88rem]">
-        <div className="flex max-w-3xl flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
           <div>
             <p className="text-primary text-[11px] font-bold tracking-[0.2em] uppercase">
               {eyebrow}
@@ -55,9 +53,6 @@ export function PopularDiagrams({
               {title}
             </h2>
           </div>
-          <p className="text-muted-foreground max-w-md text-sm leading-6 sm:pb-1 sm:text-right">
-            {description}
-          </p>
         </div>
 
         <div className="mt-10 overflow-x-auto pb-4">

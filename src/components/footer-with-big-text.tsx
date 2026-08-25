@@ -23,8 +23,112 @@ export interface FooterLinkColumn {
 
 const SUPPORT_EMAIL = 'zyrliuwei@gmail.com';
 
+type FeaturedBadge = {
+  id: string;
+  href: string;
+  src?: string;
+  alt: string;
+};
+
+const FEATURED_BADGES: FeaturedBadge[] = [
+  {
+    id: 'agenthunter',
+    href: 'https://www.agenthunter.io?utm_source=badge&utm_medium=embed&utm_campaign=scidrawer%20ai',
+    alt: 'AgentHunter Featured AI Agent',
+  },
+  {
+    id: 'ai-agents-directory',
+    href: 'https://aiagentsdirectory.com/agent/scidrawer-ai',
+    src: 'https://aiagentsdirectory.com/featured-badge.svg?v=2024',
+    alt: 'SciDrawer AI featured on AI Agents Directory',
+  },
+  {
+    id: 'toolbit',
+    href: 'https://toolbit.ai/ai-tool/scidrawer-com?ref=embed',
+    src: 'https://cdn.toolbit.ai/external-share-img/dark-featured.svg',
+    alt: 'SciDrawer AI featured on ToolBit.ai',
+  },
+  {
+    id: 'fazier',
+    href: 'https://fazier.com',
+    src: 'https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=dark',
+    alt: 'SciDrawer AI featured on Fazier',
+  },
+  {
+    id: 'startup-fame',
+    href: 'https://startupfa.me/s/scidrawer.com-748?utm_source=www.scidrawer.com',
+    src: 'https://startupfa.me/badges/featured-badge.webp',
+    alt: 'SciDrawer AI featured on Startup Fame',
+  },
+  {
+    id: 'turbo0',
+    href: 'https://turbo0.com/item/scidrawer',
+    src: 'https://img.turbo0.com/badge-listed-light.svg',
+    alt: 'SciDrawer AI listed on Turbo0',
+  },
+  {
+    id: 'toolrain',
+    href: 'https://toolrain.com/item/scidrawer-ai',
+    src: 'https://toolrain.com/badges/badge-listed-dark.svg',
+    alt: 'SciDrawer AI listed on ToolRain',
+  },
+  {
+    id: 'auraplusplus',
+    href: 'https://auraplusplus.com/projects/scidrawer-ai',
+    src: 'https://auraplusplus.com/images/badges/featured-on-dark.svg',
+    alt: 'SciDrawer AI featured on Aura++',
+  },
+  {
+    id: 'bestsky-tools',
+    href: 'https://bestsky.tools?utm_source=badge',
+    src: 'https://assets.bestsky.tools/badges/featured-light.svg',
+    alt: 'SciDrawer AI featured on BestskyTools',
+  },
+  {
+    id: 'dofollow-tools',
+    href: 'https://dofollow.tools',
+    src: 'https://dofollow.tools/badge/badge_dark.svg',
+    alt: 'SciDrawer AI featured on Dofollow.Tools',
+  },
+  {
+    id: 'wired-business',
+    href: 'https://wired.business',
+    src: 'https://wired.business/badge0-dark.svg',
+    alt: 'SciDrawer AI featured on Wired Business',
+  },
+  {
+    id: 'good-ai-tools',
+    href: 'https://goodaitools.com/ai/scidrawer',
+    src: 'https://goodaitools.com/assets/images/badge-dark.png',
+    alt: 'SciDrawer AI featured on Good AI Tools',
+  },
+  {
+    id: 'domainrank',
+    href: 'https://domainrank.app',
+    src: 'https://domainrank.app/api/badge/scidrawer.com?theme=dark',
+    alt: 'SciDrawer AI domain rating on DomainRank',
+  },
+  {
+    id: 'findly-tools',
+    href: 'https://findly.tools/scidrawer-ai?utm_source=scidrawer-ai',
+    src: 'https://findly.tools/badges/findly-tools-badge-light.svg',
+    alt: 'SciDrawer AI featured on Findly.tools',
+  },
+  {
+    id: 'product-wing',
+    href: 'https://productwing.com/product/scidrawer',
+    src: 'https://productwing.com/assets/images/badge-dark.png',
+    alt: 'SciDrawer AI featured on Product Wing',
+  },
+];
+
 export function FooterWithBigText() {
   const year = new Date().getFullYear();
+  const marqueeStyle = {
+    '--scroll-duration': '100s',
+  } as React.CSSProperties;
+  const badgeClassName =
+    'group flex h-[70px] w-[220px] shrink-0 items-center justify-center px-3 py-2 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:h-[78px] sm:w-[260px]';
 
   const columns: FooterLinkColumn[] = [
     {
@@ -83,7 +187,80 @@ export function FooterWithBigText() {
   return (
     <footer className="relative overflow-hidden bg-neutral-950 px-4 pt-14 pb-4 text-neutral-100 sm:px-6 sm:pt-16 lg:px-8 lg:pt-20">
       <div className="mx-auto max-w-5xl">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-0">
+        <div
+          role="region"
+          aria-label={m['landing.footer.featured_on']()}
+          className="group overflow-hidden border-b border-neutral-800 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)] pb-6"
+        >
+          <div
+            className="animate-scroll flex w-max will-change-transform group-focus-within:[animation-play-state:paused] group-hover:[animation-play-state:paused] motion-reduce:animate-none"
+            style={marqueeStyle}
+          >
+            {[0, 1].map((copy) => (
+              <ul
+                key={copy}
+                aria-hidden={copy === 1}
+                className="flex shrink-0 gap-4 pr-4"
+              >
+                {FEATURED_BADGES.map((badge) => (
+                  <li key={`${copy}-${badge.id}`} className="shrink-0">
+                    {badge.id === 'agenthunter' ? (
+                      <a
+                        href={badge.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={badge.alt}
+                        tabIndex={copy === 1 ? -1 : undefined}
+                        className={`${badgeClassName} gap-3 text-left`}
+                      >
+                        <img
+                          src="https://www.agenthunter.io/logo-dark.svg"
+                          alt=""
+                          width={40}
+                          height={40}
+                          loading="lazy"
+                          className="size-10 shrink-0"
+                        />
+                        <span className="flex flex-col">
+                          <span className="text-xs text-gray-400">
+                            AgentHunter
+                          </span>
+                          <span className="text-sm font-semibold text-gray-50">
+                            Featured AI Agent
+                          </span>
+                        </span>
+                      </a>
+                    ) : (
+                      <a
+                        href={badge.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={badge.alt}
+                        tabIndex={copy === 1 ? -1 : undefined}
+                        {...(badge.id === 'toolbit'
+                          ? {
+                              'data-tb-secret':
+                                '0e74bd9e85bb53116ed0cd60803434592a4fa9d136d069f5',
+                            }
+                          : {})}
+                        className={badgeClassName}
+                      >
+                        <img
+                          src={badge.src}
+                          alt=""
+                          loading="lazy"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-0">
           {columns.map((col) => (
             <div key={col.title} className="col-span-1 lg:col-span-2">
               <h3 className="text-sm font-semibold text-neutral-100">
@@ -121,223 +298,10 @@ export function FooterWithBigText() {
             <p className="mt-4 max-w-sm text-sm leading-6 text-neutral-400">
               {m['landing.footer.brand_description']()}
             </p>
-            <a
-              href="https://www.agenthunter.io?utm_source=badge&utm_medium=embed&utm_campaign=scidrawer%20ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-7 inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 font-sans no-underline transition-all duration-200 hover:border-gray-500 hover:bg-gray-800"
-            >
-              <img
-                src="https://www.agenthunter.io/logo-dark.svg"
-                alt="AgentHunter Badge"
-                className="size-10"
-              />
-              <span className="flex flex-col">
-                <span className="text-xs text-gray-400">AgentHunter</span>
-                <span className="text-sm font-semibold text-gray-50">
-                  Featured AI Agent
-                </span>
-              </span>
-            </a>
-            <a
-              href="https://aiagentsdirectory.com/agent/scidrawer-ai"
-              target="_blank"
-              rel="noopener"
-              title="Discover SciDrawer AI on AI Agents Directory"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://aiagentsdirectory.com/featured-badge.svg?v=2024"
-                alt="SciDrawer AI - Featured on AI Agents Directory"
-                width={200}
-                height={50}
-              />
-            </a>
-            <a
-              href="https://toolbit.ai/ai-tool/scidrawer-com?ref=embed"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-tb-secret="0e74bd9e85bb53116ed0cd60803434592a4fa9d136d069f5"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://cdn.toolbit.ai/external-share-img/dark-featured.svg"
-                alt="Featured on ToolBit.ai - Scidrawer AI"
-                width={250}
-                height={76}
-                className="block h-[76px] w-[250px]"
-              />
-            </a>
-            <a
-              href="https://fazier.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=dark"
-                alt="Fazier badge"
-                width={250}
-                className="block w-[250px]"
-              />
-            </a>
-            <a
-              href="https://startupfa.me/s/scidrawer.com-748?utm_source=www.scidrawer.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://startupfa.me/badges/featured-badge.webp"
-                alt="SciDrawer AI - Featured on Startup Fame"
-                width={171}
-                height={54}
-                className="block h-[54px] w-[171px]"
-              />
-            </a>
-            <a
-              href="https://turbo0.com/item/scidrawer"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://img.turbo0.com/badge-listed-light.svg"
-                alt="Listed on Turbo0"
-                height={54}
-                className="block h-[54px] w-auto"
-              />
-            </a>
-            <a
-              href="https://toolrain.com/item/scidrawer-ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://toolrain.com/badges/badge-listed-dark.svg"
-                alt="Listed on ToolRain"
-                height={60}
-                className="block h-[60px] w-auto"
-              />
-            </a>
-            <a
-              href="https://auraplusplus.com/projects/scidrawer-ai"
-              target="_blank"
-              rel="noopener"
-              title="View this project on Aura++"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://auraplusplus.com/images/badges/featured-on-dark.svg"
-                alt="Featured on Aura++"
-                width={265}
-                height={58}
-                className="block h-[58px] w-[265px]"
-              />
-            </a>
-            <a
-              href="https://bestsky.tools?utm_source=badge"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://assets.bestsky.tools/badges/featured-light.svg"
-                alt="Featured on BestskyTools"
-                width={150}
-                className="block w-[150px]"
-              />
-            </a>
-            <a
-              href="https://dofollow.tools"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://dofollow.tools/badge/badge_dark.svg"
-                alt="Featured on Dofollow.Tools"
-                width={200}
-                height={54}
-                className="block h-[54px] w-[200px]"
-              />
-            </a>
-            <a
-              href="https://wired.business"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://wired.business/badge0-dark.svg"
-                alt="Featured on Wired Business"
-                width={200}
-                height={54}
-                className="block h-[54px] w-[200px]"
-              />
-            </a>
-            <a
-              href="https://goodaitools.com/ai/scidrawer"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://goodaitools.com/assets/images/badge-dark.png"
-                alt="Good AI Tools"
-                height={54}
-                loading="lazy"
-                className="block h-[54px] w-auto"
-              />
-            </a>
-            <a
-              href="https://domainrank.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://domainrank.app/api/badge/scidrawer.com?theme=dark"
-                alt="scidrawer.com Domain Rating"
-                width={360}
-                height={80}
-                loading="lazy"
-                className="block h-auto w-full max-w-[360px]"
-              />
-            </a>
-            <a
-              href="https://findly.tools/scidrawer-ai?utm_source=scidrawer-ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://findly.tools/badges/findly-tools-badge-light.svg"
-                alt="Featured on Findly.tools"
-                width={175}
-                height={55}
-                className="block h-[55px] w-[175px]"
-              />
-            </a>
-            <a
-              href="https://productwing.com/product/scidrawer"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 block w-fit"
-            >
-              <img
-                src="https://productwing.com/assets/images/badge-dark.png"
-                alt="Product Wing"
-                height={54}
-                loading="lazy"
-                className="block h-[54px] w-auto"
-              />
-            </a>
           </div>
         </div>
 
-        <div className="mt-14 border-t border-neutral-800 pt-6">
+        <div className="mt-12 border-t border-neutral-800 pt-6">
           <p className="text-center text-sm text-neutral-400">
             © {year} SciDrawer AI. All rights reserved.
           </p>

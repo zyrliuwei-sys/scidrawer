@@ -58,7 +58,6 @@ export function PopularDiagramsSection() {
     <PopularDiagrams
       eyebrow={m['landing.popular_diagrams.eyebrow']()}
       title={m['landing.popular_diagrams.title']()}
-      description={m['landing.popular_diagrams.description']()}
       items={items}
     />
   );

@@ -28,7 +28,7 @@ import { apiGet, apiPost, apiPostForm } from '@/lib/api-client';
 import { getUuid } from '@/lib/hash';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
-import { localizeHref } from '@/paraglide/runtime.js';
+import { getLocale, localizeHref } from '@/paraglide/runtime.js';
 import { useImagePreview } from '@/hooks/use-image-preview';
 import { usePublicConfig } from '@/hooks/use-public-config';
 import {
@@ -105,7 +105,11 @@ const PAYMENT_PROVIDERS: PaymentProvider[] = [
 // the main work area; Settings / Logout / Sign-in live outside the
 // workspace chrome.
 const NAV_LINKS = [
-  { label: 'Generator', href: '/generate', icon: <Wand2 className="size-5" /> },
+  {
+    label: 'Image Generate',
+    href: '/generate',
+    icon: <Wand2 className="size-5" />,
+  },
   {
     label: 'History',
     href: '#generation-history',
@@ -114,6 +118,44 @@ const NAV_LINKS = [
 ];
 
 const HISTORY_PAGE_SIZE = 24;
+
+type GenerationExample = {
+  id: string;
+  title: string;
+  image: string;
+  prompt: string;
+  aspect: (typeof IMAGE_SIZES)[number];
+};
+
+// These are complete, production-ready prompt starting points. Keeping the
+// source image and prompt together makes the example gallery useful rather
+// than a purely decorative showcase.
+const GENERATION_EXAMPLES: GenerationExample[] = [
+  {
+    id: 'cellular-architecture',
+    title: 'Cellular architecture',
+    image: '/imgs/generated/cellular-architecture.png',
+    aspect: '16:9',
+    prompt:
+      'Create a publication-ready cross-section of a eukaryotic cell with clearly labeled nucleus, nucleolus, mitochondria with cristae, rough and smooth endoplasmic reticulum, Golgi apparatus, lysosomes, ribosomes, cytoskeleton, and cell membrane. Use a clean BioRender-style scientific illustration, thin leader lines, muted pastel colors, white background, balanced infographic layout, and crisp academic typography.',
+  },
+  {
+    id: 'signaling-cascade',
+    title: 'Signal transduction',
+    image: '/imgs/generated/signaling-cascade.png',
+    aspect: '16:9',
+    prompt:
+      'Illustrate a cellular signal transduction pathway from ligand binding at a membrane receptor through cytoplasmic kinase signaling to transcription-factor activation in the nucleus. Show directional arrows, phosphorylation steps, feedback inhibition, and concise labels. Use a polished scientific infographic style with subtle pastel colors, thin dark outlines, white background, and manuscript-ready spacing.',
+  },
+  {
+    id: 'rna-delivery',
+    title: 'RNA therapeutic delivery',
+    image: '/imgs/generated/rna-therapeutic-delivery.png',
+    aspect: '16:9',
+    prompt:
+      'Create a three-panel graphical abstract explaining RNA therapeutic delivery: lipid nanoparticle formulation, intravenous administration and tissue targeting, then cellular uptake, endosomal escape, and protein expression. Include clean arrows, labeled compartments, an elegant clinical color palette, white background, and precise publication-ready scientific illustration styling.',
+  },
+];
 
 const HISTORY_PANEL_COPY: ImageHistoryCopy = {
   imageCounter: (current, total) => `${current} of ${total}`,
@@ -560,6 +602,9 @@ function GeneratePage() {
   const { prompt: starterPrompt } = Route.useSearch();
   const { data: session } = useSession();
   const [prompt, setPrompt] = useState(starterPrompt ?? '');
+  const [selectedExampleId, setSelectedExampleId] = useState<string | null>(
+    null
+  );
   const [aspect, setAspect] = useState<(typeof IMAGE_SIZES)[number]>('1:1');
   const [resolution, setResolution] =
     useState<(typeof RESOLUTIONS)[number]>('1K');
@@ -788,6 +833,7 @@ function GeneratePage() {
   const previewImages = images;
   const activePreviewId = activeImageId;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const promptInputRef = useRef<HTMLTextAreaElement>(null);
 
   const canSubmit =
     prompt.trim().length >= 3 && !isGenerating && !isUploadingReferences;
@@ -1146,6 +1192,28 @@ function GeneratePage() {
     }
   };
 
+  const chooseGenerationExample = (example: GenerationExample) => {
+    if (isGenerating || genState.status === 'generating') return;
+
+    setPrompt(example.prompt);
+    setAspect(example.aspect);
+    setSelectedExampleId(example.id);
+    if (genState.status !== 'idle') dispatchGen({ type: 'reset' });
+
+    // Allow the reset above to reveal the input before moving the user's
+    // attention to the newly populated prompt.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        promptInputRef.current?.focus();
+        promptInputRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      });
+    });
+    toast.success('Prompt added — refine it or click Generate.');
+  };
+
   return (
     <div className="flex min-h-screen w-full min-w-0 flex-1 flex-col overflow-hidden text-neutral-900 md:flex-row">
       {/* Aceternity-style collapsible icon sidebar. */}
@@ -1265,6 +1333,7 @@ function GeneratePage() {
                     </div>
                   )}
                   <Textarea
+                    ref={promptInputRef}
                     rows={6}
                     placeholder="Describe a scientific figure, e.g. a mitochondrial ultrastructure with cristae and mtDNA labels…"
                     value={prompt}
@@ -1471,6 +1540,67 @@ function GeneratePage() {
                 onCopyPrompt={copyCurrentPrompt}
               />
             )}
+
+            <section
+              aria-labelledby="generation-examples-title"
+              className="mt-7"
+            >
+              <div className="flex items-baseline justify-between gap-4">
+                <h2
+                  id="generation-examples-title"
+                  className="text-base font-semibold text-slate-900"
+                >
+                  Examples
+                </h2>
+                <p className="text-xs text-slate-500">Click to use a prompt</p>
+              </div>
+
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                {GENERATION_EXAMPLES.map((example) => {
+                  const isSelected = selectedExampleId === example.id;
+                  return (
+                    <button
+                      key={example.id}
+                      type="button"
+                      aria-pressed={isSelected}
+                      disabled={
+                        isGenerating || genState.status === 'generating'
+                      }
+                      onClick={() => chooseGenerationExample(example)}
+                      className={cn(
+                        'group overflow-hidden rounded-xl border bg-white text-left transition-colors focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
+                        isSelected
+                          ? 'border-slate-900'
+                          : 'border-slate-200 hover:border-slate-400'
+                      )}
+                    >
+                      <div className="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img
+                          src={example.image}
+                          alt={`${example.title} example scientific figure`}
+                          className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                        <h3 className="text-sm font-medium text-slate-900">
+                          {example.title}
+                        </h3>
+                        <span
+                          className={cn(
+                            'shrink-0 text-xs',
+                            isSelected
+                              ? 'font-medium text-slate-900'
+                              : 'text-slate-400'
+                          )}
+                        >
+                          {isSelected ? 'Added' : 'Use'}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
           </div>
         </section>
       </main>
@@ -1678,14 +1808,27 @@ export const Route = createFileRoute('/generate')({
         ? search.prompt.slice(0, 4_000)
         : undefined,
   }),
+  loader: () => {
+    const locale = getLocale();
+
+    return {
+      title: m['generator.seo.title']({}, { locale }),
+      description: m['generator.seo.description']({}, { locale }),
+    };
+  },
   component: GeneratePage,
-  head: () => ({
+  head: ({ loaderData }) => ({
     meta: [
-      { title: 'Scientific Figure Generator | SciDrawer AI' },
+      {
+        title:
+          loaderData?.title ??
+          'Image Generate | AI Scientific Figure Generator | SciDrawer',
+      },
       {
         name: 'description',
         content:
-          'AI-powered scientific image generator — describe a pathway, lab setup, micrograph, or graphical abstract and get a publication-ready figure in seconds.',
+          loaderData?.description ??
+          'Create publication-ready scientific figures from a text prompt, sketch, or reference image with AI.',
       },
     ],
   }),
