@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -7,15 +8,26 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from 'react';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import {
+  AlertCircle,
+  ArrowDown,
   Box,
   Check,
   ChevronDown,
+  Download,
   History,
   Image as ImageIcon,
+  ImageOff,
   Loader2,
+  LoaderCircle,
+  Pencil,
+  RefreshCw,
   Send,
   Wand2,
   X,
@@ -23,7 +35,7 @@ import {
 import { toast } from 'sonner';
 
 import { signIn, useSession } from '@/core/auth/client';
-import { Link } from '@/core/i18n/navigation';
+import { Link, useRouter } from '@/core/i18n/navigation';
 import { apiGet, apiPost, apiPostForm } from '@/lib/api-client';
 import { getUuid } from '@/lib/hash';
 import { cn } from '@/lib/utils';
@@ -31,16 +43,16 @@ import { m } from '@/paraglide/messages.js';
 import { getLocale, localizeHref } from '@/paraglide/runtime.js';
 import { useImagePreview } from '@/hooks/use-image-preview';
 import { usePublicConfig } from '@/hooks/use-public-config';
+import { FigpadWorkspaceSidebar } from '@/components/generator/figpad-workspace-sidebar';
+import { FlowchartWorkspace } from '@/components/generator/flowchart-workspace';
+import type { GenerationSessionCopy } from '@/components/generator/generation-session';
+import { PlotWorkspace } from '@/components/generator/plot-workspace';
+import { SvgConverterWorkspace } from '@/components/generator/svg-converter-workspace';
+import { SvgEditorWorkspace } from '@/components/generator/svg-editor-workspace';
 import {
-  Sidebar,
-  SidebarBody,
-  SidebarLink,
-  SidebarLogo,
-} from '@/components/acet-sidebar';
-import {
-  GenerationSession,
-  type GenerationSessionCopy,
-} from '@/components/generator/generation-session';
+  WorkspaceModeTabs,
+  type GeneratorWorkspaceMode,
+} from '@/components/generator/workspace-mode-tabs';
 import {
   ImagePreviewPanel,
   type ImageHistoryCopy,
@@ -100,23 +112,6 @@ const PAYMENT_PROVIDERS: PaymentProvider[] = [
   'wechat',
 ];
 
-// Aceternity-style nav links — only the active page (Generate) is
-// shown. Examples / Showcases are reachable via in-page anchors on
-// the main work area; Settings / Logout / Sign-in live outside the
-// workspace chrome.
-const NAV_LINKS = [
-  {
-    label: 'Image Generate',
-    href: '/generate',
-    icon: <Wand2 className="size-5" />,
-  },
-  {
-    label: 'History',
-    href: '#generation-history',
-    icon: <History className="size-5" />,
-  },
-];
-
 const HISTORY_PAGE_SIZE = 24;
 
 type GenerationExample = {
@@ -157,19 +152,18 @@ const GENERATION_EXAMPLES: GenerationExample[] = [
   },
 ];
 
+// The starter-prompt gallery is temporarily hidden. Flip to true to restore
+// the Examples section in the empty workspace.
+const SHOW_GENERATION_EXAMPLES = false;
+
 const HISTORY_PANEL_COPY: ImageHistoryCopy = {
   imageCounter: (current, total) => `${current} of ${total}`,
   imageTotal: (total) => `${total} images`,
   download: 'Download image',
-  expand: 'Expand preview panel',
-  restore: 'Reset preview width',
   close: 'Close history',
   gallery: 'All images',
   preview: 'Back to preview',
   clear: 'Clear images',
-  searchPlaceholder: 'Search prompts',
-  allModels: 'All models',
-  allAspects: 'All sizes',
   today: 'Today',
   yesterday: 'Yesterday',
   earlier: 'Earlier',
@@ -178,14 +172,13 @@ const HISTORY_PANEL_COPY: ImageHistoryCopy = {
   loadMore: 'Load more',
   loadingMore: 'Loading',
   generated: 'Generated image',
-  references: (count) => `${count} reference image${count === 1 ? '' : 's'}`,
   loading: 'Loading image preview…',
   unavailable: 'Image preview unavailable',
   dateLocale: 'en-US',
 };
 
 const SESSION_COPY: GenerationSessionCopy = {
-  title: 'Figure generation',
+  title: 'Image Generate',
   preparing: 'Preparing generation',
   rendering: 'Rendering figure',
   complete: 'Figure ready',
@@ -287,6 +280,8 @@ type ActiveGenerationSession = {
   startedAt: number;
   progress: number;
   estimatedTime: number | null;
+  /** True when this task consumed the one-time welcome generation. */
+  welcome?: boolean;
 };
 
 const ACTIVE_GENERATION_STORAGE_KEY = 'scidrawer.active-image-generation.v1';
@@ -388,8 +383,10 @@ async function retryRequest<T>(run: () => Promise<T>): Promise<T> {
     } catch (error) {
       lastError = error;
       // A missing balance is a deterministic billing result, not a transient
-      // generation failure. Surface the purchase dialog immediately.
-      if (attempt === 0 && !isInsufficientCreditsError(error)) {
+      // generation failure. Surface the purchase dialog immediately — never
+      // retry the doomed request.
+      if (isInsufficientCreditsError(error)) break;
+      if (attempt === 0) {
         await new Promise((resolve) =>
           setTimeout(resolve, GENERATION_RETRY_DELAY_MS)
         );
@@ -546,15 +543,6 @@ function taskPreviewUrls(id: string, version?: string | number) {
   };
 }
 
-function retryPreviewUrl(image: PreviewImage, retryToken: number) {
-  if (!retryToken || !image.src.startsWith('/api/ai/images/')) return image;
-  const separator = image.src.includes('?') ? '&' : '?';
-  return {
-    ...image,
-    src: `${image.src}${separator}preview_retry=${retryToken}`,
-  };
-}
-
 function asGeneratedImage(
   item: GenerationHistoryResponse['items'][number]
 ): GeneratedImage {
@@ -598,10 +586,160 @@ function mergeImages(
   });
 }
 
+/** One generated figure in the chat-style feed: the image plus its quiet
+ *  action row (download / reference / regenerate). */
+function FeedImageCard({
+  image,
+  copy,
+  onUseAsReference,
+  onRegenerate,
+  onPreview,
+}: {
+  image: GeneratedImage;
+  copy: GenerationSessionCopy;
+  onUseAsReference: (image: GeneratedImage) => void;
+  onRegenerate: (image: GeneratedImage) => void;
+  onPreview: (image: GeneratedImage) => void;
+}) {
+  const { objectUrl, status: imageState, retry } = useImagePreview(image.src);
+
+  return (
+    <figure className="group/fig flex w-full max-w-[320px] flex-col gap-2 self-start">
+      <div className="flex min-h-[140px] w-fit max-w-full min-w-[220px] items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_2px_12px_rgba(30,41,47,0.06)]">
+        {imageState === 'loading' && (
+          <LoaderCircle className="size-5 animate-spin text-slate-400" />
+        )}
+        {imageState === 'error' && (
+          <button
+            type="button"
+            onClick={retry}
+            className="flex flex-col items-center gap-2 px-6 py-8 text-xs font-medium text-slate-500 transition-colors hover:text-slate-800"
+          >
+            <ImageOff className="size-5" />
+            {copy.imageUnavailable}
+          </button>
+        )}
+        {objectUrl && imageState === 'ready' && (
+          <img
+            src={objectUrl}
+            alt={image.name ?? image.prompt ?? 'Generated figure'}
+            onClick={() => onPreview(image)}
+            title="Open in preview"
+            className="max-h-[220px] w-auto max-w-full cursor-zoom-in rounded-2xl object-contain transition-opacity hover:opacity-90"
+          />
+        )}
+      </div>
+      <figcaption className="pointer-events-none flex flex-wrap items-center gap-1 text-xs font-medium text-slate-500 opacity-0 transition-opacity duration-200 group-hover/fig:pointer-events-auto group-hover/fig:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
+        <a
+          href={image.downloadUrl ?? image.src}
+          download={image.name}
+          title="Download"
+          aria-label="Download"
+          className="group flex items-center rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-100 hover:text-slate-900"
+        >
+          <Download className="size-3.5 shrink-0" />
+          <span className="max-w-0 overflow-hidden text-left whitespace-nowrap opacity-0 transition-all duration-200 group-hover:ml-1.5 group-hover:max-w-40 group-hover:opacity-100">
+            Download
+          </span>
+        </a>
+        <button
+          type="button"
+          onClick={() => onUseAsReference(image)}
+          title={copy.useAsReference}
+          aria-label={copy.useAsReference}
+          className="group flex items-center rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-100 hover:text-slate-900"
+        >
+          <ArrowDown className="size-3.5 shrink-0" />
+          <span className="max-w-0 overflow-hidden text-left whitespace-nowrap opacity-0 transition-all duration-200 group-hover:ml-1.5 group-hover:max-w-40 group-hover:opacity-100">
+            {copy.useAsReference}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onRegenerate(image)}
+          title={copy.regenerate}
+          aria-label={copy.regenerate}
+          className="group flex items-center rounded-full px-2.5 py-1.5 transition-colors hover:bg-slate-100 hover:text-slate-900"
+        >
+          <RefreshCw className="size-3.5 shrink-0" />
+          <span className="max-w-0 overflow-hidden text-left whitespace-nowrap opacity-0 transition-all duration-200 group-hover:ml-1.5 group-hover:max-w-40 group-hover:opacity-100">
+            {copy.regenerate}
+          </span>
+        </button>
+      </figcaption>
+    </figure>
+  );
+}
+
+/** The in-flight / failed generation slot at the bottom of the feed, directly
+ *  above the composer — an animated placeholder illustration while running,
+ *  retry panel when it fails. */
+function FeedProgressCard({
+  status,
+  progress,
+  errorMessage,
+  copy,
+  onRetry,
+}: {
+  status: 'submitting' | 'generating' | 'failed';
+  progress: number;
+  errorMessage?: string;
+  copy: GenerationSessionCopy;
+  onRetry: () => void;
+}) {
+  if (status === 'failed') {
+    return (
+      <div className="flex w-full max-w-[400px] flex-col gap-3 self-start rounded-2xl border border-red-200 bg-red-50/70 p-4">
+        <div className="flex items-start gap-2.5 text-sm text-red-700">
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          <p className="min-w-0 break-words">
+            {errorMessage ?? copy.imageUnavailable}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onRetry}
+          className="w-fit rounded-full"
+        >
+          <RefreshCw className="size-3.5" />
+          {copy.retry}
+        </Button>
+      </div>
+    );
+  }
+
+  const safeProgress = Math.max(0, Math.min(100, Math.round(progress)));
+
+  return (
+    <div className="flex w-full max-w-[320px] self-start rounded-2xl border border-slate-200 bg-white p-2.5 shadow-[0_2px_12px_rgba(30,41,47,0.06)]">
+      <div
+        role="progressbar"
+        aria-label={copy.rendering}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={safeProgress}
+        className="w-full overflow-hidden rounded-xl border border-slate-100"
+      >
+        <img
+          src="/imgs/generating.svg"
+          alt=""
+          draggable={false}
+          className="block h-[180px] w-full object-cover select-none"
+        />
+      </div>
+    </div>
+  );
+}
+
 function GeneratePage() {
   const { prompt: starterPrompt } = Route.useSearch();
   const { data: session } = useSession();
+  const router = useRouter();
   const [prompt, setPrompt] = useState(starterPrompt ?? '');
+  const [workspaceMode, setWorkspaceMode] =
+    useState<GeneratorWorkspaceMode>('illustration');
   const [selectedExampleId, setSelectedExampleId] = useState<string | null>(
     null
   );
@@ -616,19 +754,25 @@ function GeneratePage() {
     useState<ParameterMenu | null>(null);
   const [referenceImages, setReferenceImages] = useState<ReferenceImage[]>([]);
   const [isUploadingReferences, setIsUploadingReferences] = useState(false);
-  // Sidebar state — collapsible (Aceternity style). Currently the page is
-  // always rendered as the "Generate" workspace, so the active link is fixed
-  // to `/generate`.
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   // Fresh results appear immediately. Completed results from previous visits
   // are loaded from the user's persisted task history below.
   const [recentImages, setRecentImages] = useState<GeneratedImage[]>([]);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [previewRetryToken, setPreviewRetryToken] = useState(0);
+  // Prompt of the in-flight generation, shown as a feed bubble while the
+  // figure renders (feed turns only exist once an image completes).
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const [registrationPromptOpen, setRegistrationPromptOpen] = useState(false);
   const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
   const [paymentPromptOpen, setPaymentPromptOpen] = useState(false);
+  // Set when the one-time welcome generation succeeds, when the server rejects
+  // a submit for insufficient credits, or right on load when the welcome image
+  // is already spent and the balance can't cover a render. Until credits
+  // arrive (a checkout redirect reloads the page and resets this flag), any
+  // submit opens the paywall instantly — no doomed request, and no generation
+  // placeholder flashing in the feed first.
+  const [welcomeGenerationUsed, setWelcomeGenerationUsed] = useState(false);
   const [paymentProviderOpen, setPaymentProviderOpen] = useState(false);
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const [loadingPaymentProvider, setLoadingPaymentProvider] =
@@ -645,6 +789,21 @@ function GeneratePage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const pollingAbortRef = useRef<AbortController | null>(null);
   const queryClient = useQueryClient();
+  // Whether the user can afford any render at all. When they can't (welcome
+  // image spent, balance below the cheapest 1K low render), the latch above
+  // is armed on load so the very first Generate click opens the paywall.
+  const paywallStatusQuery = useQuery({
+    queryKey: ['ai-image-paywall-status'],
+    queryFn: () =>
+      apiGet<{ welcomeUsed: boolean; balance: number; paywallDue: boolean }>(
+        '/api/ai/images/welcome-status'
+      ),
+    enabled: Boolean(session?.user),
+    staleTime: 30_000,
+  });
+  useEffect(() => {
+    if (paywallStatusQuery.data?.paywallDue) setWelcomeGenerationUsed(true);
+  }, [paywallStatusQuery.data]);
   const publicConfigQuery = usePublicConfig();
   const publicConfigs = publicConfigQuery.data ?? {};
   const emailEnabled = publicConfigQuery.data?.email_auth_enabled !== 'false';
@@ -708,6 +867,7 @@ function GeneratePage() {
     if (!source) {
       throw new Error('EvoLink completed without returning an image');
     }
+    setPendingPrompt(null);
     const createdAt = Date.now();
     const preview = taskPreviewUrls(`${taskId}:0`, createdAt);
     const newImage: GeneratedImage = {
@@ -766,6 +926,7 @@ function GeneratePage() {
     setModel(activeSession.model);
     setReferenceImages(activeSession.references);
     setIsGenerating(true);
+    setPendingPrompt(activeSession.prompt);
     dispatchGen({
       type: 'resume',
       jobId: activeSession.taskId,
@@ -837,6 +998,56 @@ function GeneratePage() {
 
   const canSubmit =
     prompt.trim().length >= 3 && !isGenerating && !isUploadingReferences;
+
+  // Chat-style feed: group merged history into per-task turns, oldest first,
+  // so the newest result always sits directly above the composer.
+  const feedTurns = useMemo(() => {
+    const turns: Array<{
+      taskId: string;
+      prompt: string;
+      images: GeneratedImage[];
+    }> = [];
+    for (const image of images) {
+      const taskId = image.id.split(':')[0] || image.id;
+      const current = turns[turns.length - 1];
+      if (current && current.taskId === taskId) {
+        current.images.push(image);
+      } else {
+        turns.push({ taskId, prompt: image.prompt ?? '', images: [image] });
+      }
+    }
+    return turns.reverse();
+  }, [images]);
+
+  const feedScrollRef = useRef<HTMLDivElement>(null);
+  // Set while appending older pages so the stick-to-bottom effect below does
+  // not yank the viewport when "Load earlier figures" adds content on top.
+  const skipNextFeedScrollRef = useRef(false);
+  const isGenerationRunning =
+    genState.status === 'submitting' || genState.status === 'generating';
+
+  useLayoutEffect(() => {
+    const feed = feedScrollRef.current;
+    if (!feed) return;
+    if (skipNextFeedScrollRef.current) {
+      skipNextFeedScrollRef.current = false;
+      return;
+    }
+    feed.scrollTop = feed.scrollHeight;
+  }, [images.length, isGenerationRunning]);
+
+  const loadEarlierFeed = async () => {
+    const previousHeight = feedScrollRef.current?.scrollHeight ?? 0;
+    skipNextFeedScrollRef.current = true;
+    try {
+      await historyQuery.fetchNextPage();
+    } finally {
+      requestAnimationFrame(() => {
+        const feed = feedScrollRef.current;
+        if (feed) feed.scrollTop = feed.scrollHeight - previousHeight;
+      });
+    }
+  };
 
   const handleReferenceImages = async (
     event: ChangeEvent<HTMLInputElement>
@@ -916,19 +1127,35 @@ function GeneratePage() {
     setReferenceImages((current) => current.filter((image) => image.id !== id));
   };
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
+  const handleSubmit = async (override?: {
+    prompt?: string;
+    aspect?: (typeof IMAGE_SIZES)[number];
+  }) => {
+    // Regenerate-from-history passes the original values explicitly; a plain
+    // submit reads the current composer state.
+    const submittedPrompt = (override?.prompt ?? prompt).trim();
+    const submittedAspect = override?.aspect ?? aspect;
+    if (submittedPrompt.length < 3 || isGenerating || isUploadingReferences) {
+      return;
+    }
     if (!session?.user) {
-      persistGuestPrompt(prompt);
+      persistGuestPrompt(submittedPrompt);
       setLoginError('');
       setRegistrationPromptOpen(true);
       return;
     }
 
+    // The welcome generation is spent (or a previous submit was rejected for
+    // insufficient credits) and no credits have arrived since (a checkout
+    // redirect reloads the page and resets this flag) — skip the doomed
+    // request and surface the paywall the instant the button fires.
+    if (welcomeGenerationUsed) {
+      setPaymentPromptOpen(true);
+      return;
+    }
+
     // Capture the submitted configuration so edits made during generation do
     // not alter the result record that is added to history.
-    const submittedPrompt = prompt.trim();
-    const submittedAspect = aspect;
     const submittedModel = model;
     const submittedReferences = referenceImages;
     const controller = new AbortController();
@@ -936,6 +1163,7 @@ function GeneratePage() {
     pollingAbortRef.current = controller;
 
     setIsGenerating(true);
+    setPendingPrompt(submittedPrompt);
     dispatchGen({ type: 'submit' });
 
     try {
@@ -964,6 +1192,7 @@ function GeneratePage() {
         startedAt: Date.now(),
         progress: task.progress,
         estimatedTime: task.estimatedTime,
+        welcome: task.welcomeGeneration === true,
       };
       persistActiveGenerationSession(activeSession);
       dispatchGen({
@@ -989,20 +1218,31 @@ function GeneratePage() {
           isSuccessfulTask(currentTask) &&
           extractEvolinkImageUrls(currentTask.results).length > 0
         ) {
+          if (activeSession.welcome) setWelcomeGenerationUsed(true);
           completeTask(task.id, currentTask, nextSession);
         }
       });
     } catch (error) {
       if (controller.signal.aborted) return;
       if (isInsufficientCreditsError(error)) {
+        // Latch so the next submit is intercepted client-side — the paywall
+        // opens the instant the button fires instead of after another round
+        // trip. Still session state only: a checkout redirect reloads the
+        // page and resets it, so paying users are never blocked.
+        setWelcomeGenerationUsed(true);
         clearActiveGenerationSession();
-        dispatchGen({ type: 'reset' });
+        // The state is still 'submitting' here, and 'reset' only clears
+        // 'succeeded'/'failed' — 'cancel' is the action that returns a
+        // submit-in-flight back to idle, so no progress card is left behind.
+        dispatchGen({ type: 'cancel' });
+        setPendingPrompt(null);
         setPaymentPromptOpen(true);
         return;
       }
       const message =
         error instanceof Error ? error.message : 'Image generation failed';
       clearActiveGenerationSession();
+      setPendingPrompt(null);
       dispatchGen({
         type: 'fail',
         error: { kind: 'network', message, retryable: true },
@@ -1023,7 +1263,15 @@ function GeneratePage() {
       const checkout = await apiPost<{ checkout_url?: string }>(
         '/api/payment/checkout',
         {
-          product_id: 'payg_starter',
+          product_id: 'starter_monthly',
+          product_name: 'Starter',
+          plan_name: 'Starter',
+          price: 900,
+          currency: 'usd',
+          type: 'subscription',
+          description: 'Starter',
+          plan: { name: 'Starter', interval: 'month', intervalCount: 1 },
+          credits: 612,
           payment_provider: provider,
           // Restore the draft after the hosted checkout returns. The next
           // generation stays a deliberate user action after credits arrive.
@@ -1060,6 +1308,34 @@ function GeneratePage() {
     setShouldAutoGenerate(false);
     void handleSubmit();
   }, [shouldAutoGenerate, session?.user, canSubmit, handleSubmit]);
+
+  // ESC leaves the workspace for the homepage. Overlays (history panel,
+  // dialogs, parameter menus) close themselves on ESC first, so only a bare
+  // workspace with nothing open navigates away.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (
+        isPanelOpen ||
+        registrationPromptOpen ||
+        paymentPromptOpen ||
+        paymentProviderOpen ||
+        openParameterMenu
+      ) {
+        return;
+      }
+      router.push('/');
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    isPanelOpen,
+    registrationPromptOpen,
+    paymentPromptOpen,
+    paymentProviderOpen,
+    openParameterMenu,
+    router,
+  ]);
 
   const handleEmailSignIn = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1146,18 +1422,17 @@ function GeneratePage() {
             },
           ]
     );
-    dispatchGen({ type: 'reset' });
-    setIsPanelOpen(true);
     toast.success('Added as a reference for your next generation');
   };
 
-  const copyCurrentPrompt = () => {
-    void navigator.clipboard
-      ?.writeText(prompt)
-      .then(() => toast.success('Prompt copied'))
-      .catch(() =>
-        toast.error('Unable to copy the prompt. Please copy it manually.')
-      );
+  const editTurnPrompt = (text: string) => {
+    // Put the whole prompt back into the composer so it can be refined
+    // and resubmitted.
+    setPrompt(text);
+    window.requestAnimationFrame(() => {
+      promptInputRef.current?.focus();
+    });
+    toast.success('Prompt restored — refine it and click Generate.');
   };
 
   const restartGeneration = () => {
@@ -1166,9 +1441,25 @@ function GeneratePage() {
     void handleSubmit();
   };
 
-  const retryGeneratedPreview = () => {
-    setPreviewRetryToken(Date.now());
-    toast.message('Reloading image preview…');
+  const regenerateFromImage = (image: GeneratedImage) => {
+    const nextAspect = IMAGE_SIZES.includes(
+      image.aspect as (typeof IMAGE_SIZES)[number]
+    )
+      ? (image.aspect as (typeof IMAGE_SIZES)[number])
+      : aspect;
+    // Show what is being regenerated in the composer, then submit the
+    // original values directly — no stale-state round trip.
+    setPrompt(image.prompt);
+    setAspect(nextAspect);
+    void handleSubmit({ prompt: image.prompt, aspect: nextAspect });
+  };
+
+  const previewFeedImage = (image: GeneratedImage) => {
+    // Select the clicked figure in the docked preview panel (and open the
+    // overlay on small screens).
+    setActiveImageId(image.id);
+    setIsPanelOpen(true);
+    window.history.replaceState(null, '', '#generation-history');
   };
 
   const openHistoryPanel = () => {
@@ -1200,55 +1491,44 @@ function GeneratePage() {
     setSelectedExampleId(example.id);
     if (genState.status !== 'idle') dispatchGen({ type: 'reset' });
 
-    // Allow the reset above to reveal the input before moving the user's
-    // attention to the newly populated prompt.
+    // The composer is always visible at the bottom — just focus it.
     window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        promptInputRef.current?.focus();
-        promptInputRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      });
+      promptInputRef.current?.focus();
     });
     toast.success('Prompt added — refine it or click Generate.');
   };
 
+  const activeSidebarTool = 'generate' as const;
+  const showingFigureWorkspace =
+    workspaceMode === 'illustration' ||
+    workspaceMode === 'flowchart' ||
+    workspaceMode === 'plot';
+
+  const selectSidebarTool = () => {
+    closeHistoryPanel();
+    setWorkspaceMode('illustration');
+  };
+
   return (
-    <div className="flex min-h-screen w-full min-w-0 flex-1 flex-col overflow-hidden text-neutral-900 md:flex-row">
-      {/* Aceternity-style collapsible icon sidebar. */}
-      <Sidebar open={open} setOpen={setOpen} className="hidden md:flex">
-        <SidebarBody className="justify-between gap-10">
-          <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
-            {open && <SidebarLogo logo="SciDrawer AI" href="/" />}
-            <div className="mt-12 flex flex-col gap-2">
-              {NAV_LINKS.map((link, idx) => (
-                <SidebarLink
-                  key={idx}
-                  link={link}
-                  active={
-                    link.href === '#generation-history'
-                      ? isPanelOpen
-                      : !isPanelOpen
-                  }
-                  onClick={(event) => {
-                    if (link.href === '#generation-history') {
-                      event.preventDefault();
-                      openHistoryPanel();
-                      return;
-                    }
-                    event.preventDefault();
-                    closeHistoryPanel();
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </SidebarBody>
-      </Sidebar>
+    <div className="flex min-h-screen w-full min-w-0 flex-1 flex-col overflow-hidden bg-white text-neutral-900 md:flex-row">
+      <FigpadWorkspaceSidebar
+        open={open}
+        onOpenChange={setOpen}
+        activeTool={activeSidebarTool}
+        onToolSelect={selectSidebarTool}
+        signedIn={Boolean(session?.user)}
+        accountLabel={session?.user?.name || session?.user?.email}
+        onAccountClick={() => {
+          if (session?.user) {
+            router.push('/settings/profile');
+            return;
+          }
+          setRegistrationPromptOpen(true);
+        }}
+      />
 
       {/* Main work panel (mirrors figpad's main > section) */}
-      <main className="min-h-screen min-w-0 flex-1">
+      <main className="flex h-dvh min-w-0 flex-1 flex-col overflow-hidden bg-white">
         <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:hidden">
           <a
             href="/"
@@ -1279,335 +1559,436 @@ function GeneratePage() {
             {isPanelOpen ? 'Close history' : 'History'}
           </Button>
         </div>
-        <section className="bg-background min-h-screen overflow-hidden">
-          {/* Page title and subtitle */}
-          <div className="mx-auto w-full max-w-[980px] px-4 pt-20 pb-6 text-center md:pt-48 xl:pt-56">
-            <h1 className="text-[36px] leading-[45px] font-semibold text-slate-900">
-              AI Scientific Figure Generator
-            </h1>
-            <p className="mx-auto mt-4 text-sm text-[#415365]">
-              Use SciDrawer AI as a scientific diagram maker for research
-              visuals you can refine and export.
-            </p>
-          </div>
-
-          {/* Generator card — full width inside the main column. The right
-              side of the viewport is reserved for the always-on preview
-              panel (rendered as a sibling of <main> below). */}
-          <div className="mx-auto mt-8 w-full max-w-[980px] px-4 pb-12">
-            {genState.status === 'idle' ? (
-              <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_2px_12px_rgba(30,38,47,0.06)] transition-all duration-200 focus-within:border-slate-400 focus-within:shadow-[0_0_0_4px_rgba(15,23,42,0.06),0_16px_42px_rgba(30,38,47,0.14)] hover:-translate-y-0.5 hover:shadow-[0_16px_42px_rgba(30,38,47,0.14)]">
-                {/* Hidden file input — triggered by the image attach button */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.webp,.gif"
-                  multiple
-                  className="hidden"
-                  onChange={handleReferenceImages}
-                />
-
-                <div className="relative">
-                  {referenceImages.length > 0 && (
-                    <div className="absolute top-4 left-5 z-10 flex max-w-[calc(100%-2.5rem)] gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                      {referenceImages.map((image) => (
-                        <div
-                          key={image.id}
-                          className="group/reference relative size-[76px] shrink-0 overflow-visible rounded-xl bg-slate-100 shadow-[0_3px_10px_rgba(15,23,42,0.14)]"
-                        >
-                          <ReferenceImagePreview
-                            name={image.name}
-                            url={image.url}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeReferenceImage(image.id)}
-                            aria-label={`Remove reference image ${image.name}`}
-                            title="Remove reference image"
-                            className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-sm transition-transform hover:scale-110 hover:bg-slate-950 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                          >
-                            <X className="size-3" strokeWidth={2.5} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <Textarea
-                    ref={promptInputRef}
-                    rows={6}
-                    placeholder="Describe a scientific figure, e.g. a mitochondrial ultrastructure with cristae and mtDNA labels…"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    className={cn(
-                      'min-h-[128px] resize-none rounded-none border-0 bg-white px-5 pb-4 text-base shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
-                      referenceImages.length > 0 ? 'pt-[108px]' : 'pt-4'
-                    )}
+        {workspaceMode === 'illustration' ? (
+          <section
+            aria-label="Generation history feed"
+            className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white"
+          >
+            <div
+              ref={feedScrollRef}
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {/* Workspace mode tabs (page title hidden) */}
+              {showingFigureWorkspace && (
+                <div className="mx-auto w-full max-w-[980px] px-4 pt-10 pb-4 text-center">
+                  <WorkspaceModeTabs
+                    activeMode={workspaceMode}
+                    onModeChange={setWorkspaceMode}
                   />
                 </div>
+              )}
 
-                <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="group/imgbtn relative">
-                      <button
-                        type="button"
-                        aria-label="Attach image"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploadingReferences || isGenerating}
-                        className="flex size-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <ImageIcon className="size-4" />
-                      </button>
-                      <div className="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 scale-95 rounded-md bg-[#111] px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover/imgbtn:scale-100 group-hover/imgbtn:opacity-100">
-                        <span className="absolute top-1/2 -left-1 size-2 -translate-y-1/2 rotate-45 bg-[#111]" />
-                        Add reference sketches or images
-                      </div>
-                    </div>
-
-                    <DropdownMenu
-                      open={openParameterMenu === 'aspect'}
-                      onOpenChange={(isOpen) =>
-                        setOpenParameterMenu(isOpen ? 'aspect' : null)
-                      }
-                    >
-                      <DropdownMenuTrigger className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2">
-                        <span className="font-medium">{aspect}</span>
-                        <ChevronDown className="size-3 opacity-50" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-32">
-                        {IMAGE_SIZES.map((ratio) => (
-                          <DropdownMenuItem
-                            key={ratio}
-                            onClick={() => {
-                              setAspect(ratio);
-                              setOpenParameterMenu(null);
-                            }}
-                            className="justify-between"
-                          >
-                            {ratio}
-                            {ratio === aspect && <Check className="size-3.5" />}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <DropdownMenu
-                      open={openParameterMenu === 'resolution'}
-                      onOpenChange={(isOpen) =>
-                        setOpenParameterMenu(isOpen ? 'resolution' : null)
-                      }
-                    >
-                      <DropdownMenuTrigger
-                        aria-label="Select resolution"
-                        className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                      >
-                        <span className="font-medium">{resolution}</span>
-                        <ChevronDown className="size-3 opacity-50" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-28">
-                        {RESOLUTIONS.map((value) => (
-                          <DropdownMenuItem
-                            key={value}
-                            onClick={() => {
-                              setResolution(value);
-                              setOpenParameterMenu(null);
-                            }}
-                            className="justify-between"
-                          >
-                            {value}
-                            {value === resolution && (
-                              <Check className="size-3.5" />
-                            )}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <DropdownMenu
-                      open={openParameterMenu === 'quality'}
-                      onOpenChange={(isOpen) =>
-                        setOpenParameterMenu(isOpen ? 'quality' : null)
-                      }
-                    >
-                      <DropdownMenuTrigger
-                        aria-label="Select generation quality"
-                        className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                      >
-                        <span className="font-medium capitalize">
-                          {quality}
-                        </span>
-                        <ChevronDown className="size-3 opacity-50" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-32">
-                        {QUALITIES.map((value) => (
-                          <DropdownMenuItem
-                            key={value}
-                            onClick={() => {
-                              setQuality(value);
-                              setOpenParameterMenu(null);
-                            }}
-                            className="justify-between capitalize"
-                          >
-                            {value}
-                            {value === quality && (
-                              <Check className="size-3.5" />
-                            )}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <DropdownMenu
-                      open={openParameterMenu === 'model'}
-                      onOpenChange={(isOpen) =>
-                        setOpenParameterMenu(isOpen ? 'model' : null)
-                      }
-                    >
-                      <DropdownMenuTrigger
-                        aria-label="Select generation model"
-                        title={`Model: ${model}`}
-                        className="flex h-8 w-auto items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-600 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                      >
-                        <Box className="size-3.5 text-slate-700" />
-                        <span className="hidden sm:inline">{model}</span>
-                        <ChevronDown className="size-3.5 opacity-50" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        {MODELS.map((candidate) => (
-                          <DropdownMenuItem
-                            key={candidate.name}
-                            onClick={() => {
-                              setModel(candidate.name);
-                              setOpenParameterMenu(null);
-                            }}
-                            className="items-start justify-between gap-3"
-                          >
-                            <span>{candidate.name}</span>
-                            {candidate.name === model && (
-                              <Check className="mt-0.5 size-3.5" />
-                            )}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
+              {/* History feed — oldest turns at the top, the newest result
+                  right above the composer. */}
+              <div className="mx-auto w-full max-w-[760px] px-4 pb-10">
+                {historyQuery.hasNextPage && (
+                  <div className="flex justify-center pb-6">
                     <Button
                       type="button"
-                      onClick={handleSubmit}
-                      disabled={!canSubmit}
-                      aria-label="Generate"
-                      title="Generate"
-                      className="size-10 rounded-[12px] bg-slate-700 p-0 text-white shadow-[0_10px_24px_rgba(30,38,47,0.18)] hover:bg-slate-800"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
+                      disabled={historyQuery.isFetchingNextPage}
+                      onClick={() => void loadEarlierFeed()}
                     >
-                      <Send className="size-4" />
+                      {historyQuery.isFetchingNextPage
+                        ? 'Loading…'
+                        : 'Load earlier figures'}
                     </Button>
+                  </div>
+                )}
+
+                {SHOW_GENERATION_EXAMPLES &&
+                feedTurns.length === 0 &&
+                !isGenerationRunning &&
+                genState.status !== 'failed' &&
+                !(session?.user && historyQuery.isLoading) ? (
+                  <section
+                    aria-labelledby="generation-examples-title"
+                    className="mx-auto mt-8 w-full max-w-[640px]"
+                  >
+                    <div className="flex items-baseline justify-between gap-4">
+                      <h2
+                        id="generation-examples-title"
+                        className="text-base font-semibold text-slate-900"
+                      >
+                        Examples
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Click to use a prompt
+                      </p>
+                    </div>
+
+                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                      {GENERATION_EXAMPLES.map((example) => {
+                        const isSelected = selectedExampleId === example.id;
+                        return (
+                          <button
+                            key={example.id}
+                            type="button"
+                            aria-pressed={isSelected}
+                            disabled={isGenerating}
+                            onClick={() => chooseGenerationExample(example)}
+                            className={cn(
+                              'group overflow-hidden rounded-xl border bg-white text-left transition-colors focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
+                              isSelected
+                                ? 'border-slate-900'
+                                : 'border-slate-200 hover:border-slate-400'
+                            )}
+                          >
+                            <div className="aspect-[16/9] overflow-hidden bg-slate-100">
+                              <img
+                                src={example.image}
+                                alt={`${example.title} example scientific figure`}
+                                className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                              <h3 className="text-sm font-medium text-slate-900">
+                                {example.title}
+                              </h3>
+                              <span
+                                className={cn(
+                                  'shrink-0 text-xs',
+                                  isSelected
+                                    ? 'font-medium text-slate-900'
+                                    : 'text-slate-400'
+                                )}
+                              >
+                                {isSelected ? 'Added' : 'Use'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ) : (
+                  <div className="flex flex-col gap-8">
+                    {feedTurns.map((turn) => (
+                      <article
+                        key={turn.taskId}
+                        className="flex flex-col gap-3"
+                      >
+                        <div className="flex flex-col items-end gap-1">
+                          <p
+                            title={turn.prompt}
+                            className="line-clamp-6 max-w-[85%] rounded-2xl rounded-tr-md bg-slate-200/80 px-4 py-2.5 text-sm leading-6 break-words whitespace-pre-wrap text-slate-800"
+                          >
+                            {turn.prompt || 'Untitled figure'}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => editTurnPrompt(turn.prompt)}
+                            aria-label="Edit prompt"
+                            title="Edit prompt"
+                            className="flex size-7 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
+                        </div>
+                        {turn.images.map((image) => (
+                          <FeedImageCard
+                            key={image.id}
+                            image={image}
+                            copy={SESSION_COPY}
+                            onUseAsReference={useGeneratedImageAsReference}
+                            onRegenerate={regenerateFromImage}
+                            onPreview={previewFeedImage}
+                          />
+                        ))}
+                      </article>
+                    ))}
+                    {(isGenerationRunning || genState.status === 'failed') && (
+                      <article className="flex flex-col gap-3">
+                        {/* The prompt of the in-flight generation — feed turns
+                            only exist once an image completes, so without this
+                            bubble the sent prompt would be invisible. */}
+                        {pendingPrompt !== null && (
+                          <div className="flex flex-col items-end">
+                            <p
+                              title={pendingPrompt}
+                              className="line-clamp-6 max-w-[85%] rounded-2xl rounded-tr-md bg-slate-200/80 px-4 py-2.5 text-sm leading-6 break-words whitespace-pre-wrap text-slate-800"
+                            >
+                              {pendingPrompt}
+                            </p>
+                          </div>
+                        )}
+                        <FeedProgressCard
+                          status={
+                            genState.status === 'submitting' ||
+                            genState.status === 'generating'
+                              ? genState.status
+                              : 'failed'
+                          }
+                          progress={
+                            genState.status === 'generating'
+                              ? genState.progress
+                              : 0
+                          }
+                          errorMessage={
+                            genState.status === 'failed'
+                              ? genState.error.message
+                              : undefined
+                          }
+                          copy={SESSION_COPY}
+                          onRetry={restartGeneration}
+                        />
+                      </article>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Composer dock — the prompt card stays put at the bottom of
+                the workspace while the history feed scrolls above it. */}
+            <div className="shrink-0 bg-white px-4 pt-0 pb-5">
+              <div className="mx-auto w-full max-w-[760px]">
+                <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_2px_12px_rgba(30,38,47,0.06)] transition-all duration-200 focus-within:border-slate-400 focus-within:shadow-[0_0_0_4px_rgba(15,23,42,0.06),0_16px_42px_rgba(30,41,47,0.14)]">
+                  {/* Hidden file input — triggered by the image attach button */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,.gif"
+                    multiple
+                    className="hidden"
+                    onChange={handleReferenceImages}
+                  />
+
+                  <div className="relative">
+                    {referenceImages.length > 0 && (
+                      <div className="absolute top-4 left-5 z-10 flex max-w-[calc(100%-2.5rem)] gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {referenceImages.map((image) => (
+                          <div
+                            key={image.id}
+                            className="group/reference relative size-[76px] shrink-0 overflow-visible rounded-xl bg-slate-100 shadow-[0_3px_10px_rgba(15,23,42,0.14)]"
+                          >
+                            <ReferenceImagePreview
+                              name={image.name}
+                              url={image.url}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeReferenceImage(image.id)}
+                              aria-label={`Remove reference image ${image.name}`}
+                              title="Remove reference image"
+                              className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-sm transition-transform hover:scale-110 hover:bg-slate-950 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                            >
+                              <X className="size-3" strokeWidth={2.5} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <Textarea
+                      ref={promptInputRef}
+                      rows={3}
+                      placeholder="Describe a scientific figure, e.g. a mitochondrial ultrastructure with cristae and mtDNA labels…"
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      className={cn(
+                        'min-h-[88px] resize-none rounded-none border-0 bg-white px-5 pb-4 text-base shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
+                        referenceImages.length > 0 ? 'pt-[108px]' : 'pt-4'
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="group/imgbtn relative">
+                        <button
+                          type="button"
+                          aria-label="Attach image"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploadingReferences || isGenerating}
+                          className="flex size-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <ImageIcon className="size-4" />
+                        </button>
+                        <div className="pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2 scale-95 rounded-md bg-[#111] px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white opacity-0 shadow-lg transition-all duration-150 group-hover/imgbtn:scale-100 group-hover/imgbtn:opacity-100">
+                          <span className="absolute top-1/2 -left-1 size-2 -translate-y-1/2 rotate-45 bg-[#111]" />
+                          Add reference sketches or images
+                        </div>
+                      </div>
+
+                      <DropdownMenu
+                        open={openParameterMenu === 'aspect'}
+                        onOpenChange={(isOpen) =>
+                          setOpenParameterMenu(isOpen ? 'aspect' : null)
+                        }
+                      >
+                        <DropdownMenuTrigger className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2">
+                          <span className="font-medium">{aspect}</span>
+                          <ChevronDown className="size-3 opacity-50" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-32">
+                          {IMAGE_SIZES.map((ratio) => (
+                            <DropdownMenuItem
+                              key={ratio}
+                              onClick={() => {
+                                setAspect(ratio);
+                                setOpenParameterMenu(null);
+                              }}
+                              className="justify-between"
+                            >
+                              {ratio}
+                              {ratio === aspect && (
+                                <Check className="size-3.5" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      <DropdownMenu
+                        open={openParameterMenu === 'resolution'}
+                        onOpenChange={(isOpen) =>
+                          setOpenParameterMenu(isOpen ? 'resolution' : null)
+                        }
+                      >
+                        <DropdownMenuTrigger
+                          aria-label="Select resolution"
+                          className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                        >
+                          <span className="font-medium">{resolution}</span>
+                          <ChevronDown className="size-3 opacity-50" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-28">
+                          {RESOLUTIONS.map((value) => (
+                            <DropdownMenuItem
+                              key={value}
+                              onClick={() => {
+                                setResolution(value);
+                                setOpenParameterMenu(null);
+                              }}
+                              className="justify-between"
+                            >
+                              {value}
+                              {value === resolution && (
+                                <Check className="size-3.5" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      <DropdownMenu
+                        open={openParameterMenu === 'quality'}
+                        onOpenChange={(isOpen) =>
+                          setOpenParameterMenu(isOpen ? 'quality' : null)
+                        }
+                      >
+                        <DropdownMenuTrigger
+                          aria-label="Select generation quality"
+                          className="flex h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-500 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                        >
+                          <span className="font-medium capitalize">
+                            {quality}
+                          </span>
+                          <ChevronDown className="size-3 opacity-50" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-32">
+                          {QUALITIES.map((value) => (
+                            <DropdownMenuItem
+                              key={value}
+                              onClick={() => {
+                                setQuality(value);
+                                setOpenParameterMenu(null);
+                              }}
+                              className="justify-between capitalize"
+                            >
+                              {value}
+                              {value === quality && (
+                                <Check className="size-3.5" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <DropdownMenu
+                        open={openParameterMenu === 'model'}
+                        onOpenChange={(isOpen) =>
+                          setOpenParameterMenu(isOpen ? 'model' : null)
+                        }
+                      >
+                        <DropdownMenuTrigger
+                          aria-label="Select generation model"
+                          title={`Model: ${model}`}
+                          className="flex h-8 w-auto items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-600 shadow-[0_1px_3px_rgba(30,38,47,0.06)] transition-colors outline-none hover:bg-slate-50 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                        >
+                          <Box className="size-3.5 text-slate-700" />
+                          <span className="hidden sm:inline">{model}</span>
+                          <ChevronDown className="size-3.5 opacity-50" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          {MODELS.map((candidate) => (
+                            <DropdownMenuItem
+                              key={candidate.name}
+                              onClick={() => {
+                                setModel(candidate.name);
+                                setOpenParameterMenu(null);
+                              }}
+                              className="items-start justify-between gap-3"
+                            >
+                              <span>{candidate.name}</span>
+                              {candidate.name === model && (
+                                <Check className="mt-0.5 size-3.5" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      <Button
+                        type="button"
+                        onClick={() => void handleSubmit()}
+                        disabled={!canSubmit}
+                        aria-label="Generate"
+                        title="Generate"
+                        className="size-10 rounded-[12px] bg-slate-700 p-0 text-white shadow-[0_10px_24px_rgba(30,38,47,0.18)] hover:bg-slate-800"
+                      >
+                        <Send className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            ) : (
-              <GenerationSession
-                status={genState.status}
-                progress={
-                  genState.status === 'generating' ? genState.progress : 0
-                }
-                elapsed={
-                  genState.status === 'generating' ||
-                  genState.status === 'succeeded'
-                    ? genState.elapsed
-                    : 0
-                }
-                prompt={prompt}
-                image={
-                  genState.status === 'succeeded'
-                    ? retryPreviewUrl(genState.image, previewRetryToken)
-                    : undefined
-                }
-                errorMessage={
-                  genState.status === 'failed'
-                    ? genState.error.message
-                    : undefined
-                }
-                copy={SESSION_COPY}
-                onClose={() => dispatchGen({ type: 'reset' })}
-                onRetry={retryGeneratedPreview}
-                onRegenerate={restartGeneration}
-                onUseAsReference={() => {
-                  if (genState.status === 'succeeded') {
-                    useGeneratedImageAsReference(genState.image);
-                  }
-                }}
-                onCopyPrompt={copyCurrentPrompt}
-              />
+            </div>
+          </section>
+        ) : (
+          <section className="min-h-screen overflow-hidden bg-white">
+            {/* Workspace mode tabs (page title hidden) */}
+            {showingFigureWorkspace && (
+              <div className="mx-auto w-full max-w-[980px] px-4 pt-10 pb-4 text-center">
+                <WorkspaceModeTabs
+                  activeMode={workspaceMode}
+                  onModeChange={setWorkspaceMode}
+                />
+              </div>
             )}
 
-            <section
-              aria-labelledby="generation-examples-title"
-              className="mt-7"
-            >
-              <div className="flex items-baseline justify-between gap-4">
-                <h2
-                  id="generation-examples-title"
-                  className="text-base font-semibold text-slate-900"
-                >
-                  Examples
-                </h2>
-                <p className="text-xs text-slate-500">Click to use a prompt</p>
-              </div>
-
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                {GENERATION_EXAMPLES.map((example) => {
-                  const isSelected = selectedExampleId === example.id;
-                  return (
-                    <button
-                      key={example.id}
-                      type="button"
-                      aria-pressed={isSelected}
-                      disabled={
-                        isGenerating || genState.status === 'generating'
-                      }
-                      onClick={() => chooseGenerationExample(example)}
-                      className={cn(
-                        'group overflow-hidden rounded-xl border bg-white text-left transition-colors focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
-                        isSelected
-                          ? 'border-slate-900'
-                          : 'border-slate-200 hover:border-slate-400'
-                      )}
-                    >
-                      <div className="aspect-[16/9] overflow-hidden bg-slate-100">
-                        <img
-                          src={example.image}
-                          alt={`${example.title} example scientific figure`}
-                          className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between gap-3 px-3 py-2.5">
-                        <h3 className="text-sm font-medium text-slate-900">
-                          {example.title}
-                        </h3>
-                        <span
-                          className={cn(
-                            'shrink-0 text-xs',
-                            isSelected
-                              ? 'font-medium text-slate-900'
-                              : 'text-slate-400'
-                          )}
-                        >
-                          {isSelected ? 'Added' : 'Use'}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          </div>
-        </section>
+            <div className="mx-auto mt-6 w-full max-w-[760px] px-4 pb-12">
+              {workspaceMode === 'svg-converter' ? (
+                <SvgConverterWorkspace />
+              ) : workspaceMode === 'svg-editor' ? (
+                <SvgEditorWorkspace />
+              ) : workspaceMode === 'flowchart' ? (
+                <FlowchartWorkspace />
+              ) : (
+                <PlotWorkspace />
+              )}
+            </div>
+          </section>
+        )}
       </main>
 
       <ImagePreviewPanel
-        title="History"
         copy={HISTORY_PANEL_COPY}
+        defaultWidth={440}
         open={isPanelOpen}
         images={previewImages}
         activeId={activePreviewId}
@@ -1616,8 +1997,6 @@ function GeneratePage() {
         hasMore={historyQuery.hasNextPage}
         isLoadingMore={historyQuery.isFetchingNextPage}
         onLoadMore={() => void historyQuery.fetchNextPage()}
-        closeOnPointerLeave={false}
-        onOpen={() => setIsPanelOpen(true)}
         onClose={closeHistoryPanel}
         onSelect={selectPreviewImage}
         emptyState={
@@ -1637,7 +2016,10 @@ function GeneratePage() {
           if (!open) setLoginError('');
         }}
       >
-        <DialogContent className="gap-5 p-6 sm:max-w-[25rem]">
+        <DialogContent
+          className="gap-5 p-6 sm:max-w-[25rem]"
+          overlayClassName="bg-white"
+        >
           <DialogTitle className="pr-8 text-center text-xl font-semibold tracking-tight text-slate-900">
             {m['common.sign.sign_in_title']()}
           </DialogTitle>
@@ -1744,39 +2126,76 @@ function GeneratePage() {
           if (!open) setLoadingPaymentProvider(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent
+          className="gap-0 overflow-hidden rounded-3xl p-0 sm:max-w-2xl"
+          overlayClassName="bg-white"
+        >
+          <DialogHeader className="sr-only">
             <DialogTitle>{m['generator.paywall.title']()}</DialogTitle>
             <DialogDescription>
               {m['generator.paywall.description']()}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-semibold text-slate-900">
-              {m['generator.paywall.starter_title']()}
-            </p>
-            <p className="mt-1 text-sm text-slate-600">
-              {m['generator.paywall.starter_description']()}
-            </p>
-          </div>
+          <div className="grid divide-y p-6 sm:p-8 md:grid-cols-2 md:divide-x md:divide-y-0">
+            {/* Left — the offer: badge, plan name, price, purchase CTA */}
+            <div className="pb-8 text-center md:pr-8 md:pb-0">
+              <span className="mx-auto flex h-6 w-fit items-center rounded-full bg-linear-to-br/increasing from-purple-400 to-amber-300 px-3 py-1 text-xs font-medium text-amber-950 ring-1 ring-white/20 ring-inset">
+                {m['generator.paywall.title']()}
+              </span>
+              <h3 className="mt-4 text-2xl font-semibold">
+                {m['generator.paywall.plan_name']()}
+              </h3>
+              <p className="text-muted-foreground mt-2 text-lg">
+                {m['generator.paywall.description']()}
+              </p>
+              <span className="mt-10 mb-6 inline-block text-5xl font-bold sm:text-6xl">
+                <span className="align-top text-3xl sm:text-4xl">$</span>9
+                <span className="text-muted-foreground ml-1 align-baseline text-lg font-medium sm:text-xl">
+                  /mo
+                </span>
+              </span>
 
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Link
-              href="/pricing"
-              className="inline-flex h-10 items-center justify-center rounded-md px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-            >
-              {m['generator.paywall.view_plans']()}
-            </Link>
-            <Button
-              type="button"
-              disabled={isStartingCheckout}
-              onClick={continueToPayment}
-            >
-              {isStartingCheckout
-                ? m['common.pricing.processing']()
-                : m['generator.paywall.purchase']()}
-            </Button>
+              <div className="flex justify-center">
+                <Button
+                  size="lg"
+                  type="button"
+                  disabled={isStartingCheckout}
+                  onClick={continueToPayment}
+                >
+                  {isStartingCheckout
+                    ? m['common.pricing.processing']()
+                    : m['generator.paywall.purchase']()}
+                </Button>
+              </div>
+            </div>
+
+            {/* Right — what the credits unlock */}
+            <div className="pt-8 md:pt-0 md:pl-8">
+              <ul role="list" className="space-y-4">
+                {[
+                  m['landing.pricing.f_612_credits'](),
+                  m['landing.pricing.f_credit_rate'](),
+                  m['landing.pricing.f_library'](),
+                  m['landing.pricing.f_bilingual'](),
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <Check className="size-3 shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-muted-foreground mt-6 text-sm">
+                {m['landing.pricing.starter_desc']()}
+              </p>
+              <Link
+                href="/pricing"
+                onClick={() => setPaymentPromptOpen(false)}
+                className="text-muted-foreground hover:text-foreground mt-6 inline-block text-sm underline underline-offset-4 transition-colors"
+              >
+                {m['generator.paywall.view_plans']()}
+              </Link>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -1795,7 +2214,7 @@ function GeneratePage() {
         loadingProvider={loadingPaymentProvider}
         onSelect={(provider) => void startCheckout(provider)}
         planName={m['generator.paywall.starter_title']()}
-        price="$5"
+        price="$9"
       />
     </div>
   );
@@ -1820,9 +2239,7 @@ export const Route = createFileRoute('/generate')({
   head: ({ loaderData }) => ({
     meta: [
       {
-        title:
-          loaderData?.title ??
-          'Image Generate | AI Scientific Figure Generator | SciDrawer',
+        title: loaderData?.title ?? 'Image Generate',
       },
       {
         name: 'description',

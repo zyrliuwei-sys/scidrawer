@@ -122,6 +122,15 @@ async function hasUsedWelcomeImageGeneration(tx: any, userId: string) {
 }
 
 /**
+ * Whether the user has already claimed the one-time welcome image. Exposed so
+ * the generate workspace can tell — before any submit — that the next click
+ * is doomed and the paywall should open without a request round trip.
+ */
+export async function hasUserUsedWelcomeImageGeneration(userId: string) {
+  return hasUsedWelcomeImageGeneration(db(), userId);
+}
+
+/**
  * Attach the provider-owned asynchronous task ID after a generation request
  * has been accepted. The database task ID remains the stable ID exposed to
  * the browser, while the provider ID is kept server-side for polling.

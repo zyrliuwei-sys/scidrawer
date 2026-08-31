@@ -697,3 +697,36 @@ export type InviteCode = typeof inviteCode.$inferSelect;
 export type NewInviteCode = typeof inviteCode.$inferInsert;
 export type UserInvite = typeof userInvite.$inferSelect;
 export type NewUserInvite = typeof userInvite.$inferInsert;
+
+// ─── Figure Studio ─────────────────────────────────────────────────────────
+
+export const figureProject = table(
+  'figure_project',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: text('title').notNull().default(''),
+    mode: text('mode').notNull().default('illustration'),
+    prompt: text('prompt').notNull().default(''),
+    settings: text('settings').notNull().default('{}'),
+    referenceImages: text('reference_images').notNull().default('[]'),
+    latestTaskId: text('latest_task_id'),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp' })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdate(() => new Date()),
+    deletedAt: integer('deleted_at', { mode: 'timestamp' }),
+  },
+  (table) => [
+    index('idx_figure_project_user_updated').on(table.userId, table.updatedAt),
+    index('idx_figure_project_user_deleted').on(table.userId, table.deletedAt),
+  ]
+);
+
+export type FigureProject = typeof figureProject.$inferSelect;
+export type NewFigureProject = typeof figureProject.$inferInsert;

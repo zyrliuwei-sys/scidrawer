@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="800" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f1f6fb"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="140" y1="330" x2="660" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.4" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="1" stop-color="#fef9c3"/>
+    </radialGradient>
+    <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" stroke="#e2e8f0" stroke-width="1"/>
+    </pattern>
+    <clipPath id="frame">
+      <rect x="48" y="36" width="704" height="408" rx="18"/>
+    </clipPath>
+  </defs>
+  <style>
+    .draw { stroke-dasharray: 820; stroke-dashoffset: 0; animation: draw 3.2s cubic-bezier(.4,0,.2,1) infinite; }
+    .draw2 { stroke-dasharray: 330; stroke-dashoffset: 0; animation: draw2 3.2s cubic-bezier(.4,0,.2,1) .3s infinite; }
+    @keyframes draw { 0% { stroke-dashoffset: 820; } 45%, 75% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -820; } }
+    @keyframes draw2 { 0% { stroke-dashoffset: 330; } 45%, 75% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -330; } }
+    .pulse { transform-box: fill-box; transform-origin: 50% 50%; animation: pulse 3.2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(.94); opacity: .7; } 50% { transform: scale(1.06); opacity: 1; } }
+    .d1 { animation-delay: .5s; } .d2 { animation-delay: 1s; } .d3 { animation-delay: 1.5s; }
+    .float { animation: float 3.2s ease-in-out infinite; }
+    .float2 { animation: float 3.2s ease-in-out -1.6s infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .twinkle { animation: twinkle 2.6s ease-in-out infinite; }
+    .t1 { animation-delay: .3s; } .t2 { animation-delay: .9s; } .t3 { animation-delay: 1.5s; } .t4 { animation-delay: 2.1s; }
+    @keyframes twinkle { 0%, 100% { opacity: .2; } 50% { opacity: .9; } }
+    .sweep { transform: translateX(-280px); animation: sweep 2.8s cubic-bezier(.4,0,.2,1) infinite; }
+    @keyframes sweep { 0% { transform: translateX(-280px); } 55%, 100% { transform: translateX(1080px); } }
+    @media (prefers-reduced-motion: reduce) {
+      .draw, .draw2, .pulse, .float, .float2, .twinkle, .sweep { animation: none; }
+    }
+  </style>
+
+  <rect width="800" height="480" fill="url(#bg)"/>
+  <rect width="800" height="480" fill="url(#grid)" opacity="0.45"/>
+  <rect x="48" y="36" width="704" height="408" rx="18" fill="#ffffff" opacity="0.55"/>
+  <rect x="48" y="36" width="704" height="408" rx="18" stroke="#dbe4ee" stroke-width="1.5"/>
+
+  <!-- Corner crop marks, like an image being framed -->
+  <path class="twinkle" d="M92 84h16M100 76v16" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"/>
+  <path class="twinkle t1" d="M692 84h16M700 76v16" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"/>
+  <path class="twinkle t2" d="M92 396h16M100 388v16" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"/>
+  <path class="twinkle t3" d="M692 396h16M700 388v16" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Classic picture glyph: sun over mountain ridges drawing itself -->
+  <circle class="pulse" cx="588" cy="146" r="38" fill="url(#sun)" stroke="#f59e0b" stroke-width="2"/>
+  <path class="draw2" d="M212 356 L322 272 L438 356" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M124 356 L298 200 L388 274 L502 170 L672 356 Z" fill="#e0f2fe" opacity="0.45"/>
+  <path class="draw" d="M124 356 L298 200 L388 274 L502 170 L672 356" stroke="url(#ink)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M112 356 H688" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round"/>
+  <circle class="pulse d1" cx="298" cy="200" r="5" fill="#0ea5e9"/>
+  <circle class="pulse d2" cx="502" cy="170" r="5" fill="#0ea5e9"/>
+
+  <!-- Drifting clouds -->
+  <g class="float">
+    <rect x="176" y="120" width="58" height="22" rx="11" fill="#e0e7ff"/>
+  </g>
+  <g class="float2">
+    <rect x="420" y="96" width="44" height="18" rx="9" fill="#cffafe"/>
+  </g>
+
+  <!-- Shimmer sweep, clipped to the frame -->
+  <g clip-path="url(#frame)">
+    <rect class="sweep" x="-20" y="-60" width="220" height="600" fill="url(#sweep)"/>
+  </g>
+</svg>

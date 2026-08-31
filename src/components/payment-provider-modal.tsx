@@ -48,7 +48,7 @@ export function PaymentProviderModal({
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" overlayClassName="bg-white">
         <DialogHeader>
           <DialogTitle>{m['common.pricing.choose_payment']()}</DialogTitle>
           <DialogDescription>

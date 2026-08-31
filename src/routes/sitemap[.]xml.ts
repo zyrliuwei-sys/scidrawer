@@ -11,7 +11,6 @@ const STATIC_PATHS = [
   '/templates',
   '/graphical-abstract-maker',
   '/plant-cell-labeled',
-  '/scientific-poster-maker',
   '/privacy-policy',
   '/terms-of-service',
 ];
