@@ -1,4 +1,7 @@
-import { BarChart3, GitBranch, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+
+// Icons for the hidden Flowchart / Plot tabs — uncomment with the modes above.
+// import { BarChart3, GitBranch } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -14,15 +17,19 @@ type FigureWorkspaceMode = Exclude<
   'svg-converter' | 'svg-editor'
 >;
 
+// Hidden for now — uncomment the entries below (and their icon imports) to
+// bring the Flowchart / Plot modes back to the switcher.
 const modes: Array<{
   id: FigureWorkspaceMode;
   label: string;
   icon: typeof Sparkles;
 }> = [
   { id: 'illustration', label: 'Illustration', icon: Sparkles },
-  { id: 'flowchart', label: 'Flowchart', icon: GitBranch },
-  { id: 'plot', label: 'Plot', icon: BarChart3 },
+  // { id: 'flowchart', label: 'Flowchart', icon: GitBranch },
+  // { id: 'plot', label: 'Plot', icon: BarChart3 },
 ];
+
+export const figureWorkspaceModes = modes;
 
 export function WorkspaceModeTabs({
   activeMode,
@@ -31,6 +38,9 @@ export function WorkspaceModeTabs({
   activeMode: FigureWorkspaceMode;
   onModeChange: (mode: FigureWorkspaceMode) => void;
 }) {
+  // A switcher with a single mode is noise — hide it entirely.
+  if (modes.length < 2) return null;
+
   return (
     <div
       className="mx-auto mb-7 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full border border-slate-200 bg-white p-1 shadow-[0_4px_14px_rgba(15,23,42,0.06)]"

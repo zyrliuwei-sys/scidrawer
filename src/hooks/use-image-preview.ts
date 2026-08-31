@@ -28,6 +28,17 @@ export function useImagePreview(sourceUrl?: string) {
       return;
     }
 
+    // Public absolute URLs (e.g. R2 custom-domain assets) are rendered by the
+    // browser directly. Fetching them to build a Blob URL requires an
+    // Access-Control-Allow-Origin response header, which the storage domain
+    // does not send — the fetch fails on CORS and every thumbnail falls back
+    // to the unavailable state. Same rule as ReferenceImagePreview.
+    if (/^https?:\/\//i.test(sourceUrl)) {
+      setObjectUrl(sourceUrl);
+      setStatus('ready');
+      return;
+    }
+
     const controller = new AbortController();
     let generatedUrl: string | null = null;
 

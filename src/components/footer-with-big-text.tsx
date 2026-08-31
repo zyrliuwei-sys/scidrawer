@@ -170,16 +170,6 @@ export function FooterWithBigText() {
           href: '/graphical-abstract-maker',
           native: true,
         },
-        {
-          label: m['landing.footer.popular.scientific_diagram'](),
-          href: '/scientific-diagram-maker',
-          native: true,
-        },
-        {
-          label: m['landing.footer.popular.pricing'](),
-          href: '/pricing',
-          native: true,
-        },
       ],
     },
   ];
