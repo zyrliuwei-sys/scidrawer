@@ -783,8 +783,9 @@ function GeneratePage() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   // The state machine keeps the real provider task visible while it runs.
   const [genState, dispatchGen] = useReducer(generateReducer, initialState);
-  // Start with the history canvas closed so the workspace is unobstructed.
-  // It opens automatically when a preview is available (generation completes,
+  // Start with the history canvas closed on small screens so the workspace is
+  // unobstructed. On desktop it is docked, so open it on mount there. It also
+  // opens automatically when a preview is available (generation completes,
   // history thumbnail clicked, etc.).
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const pollingAbortRef = useRef<AbortController | null>(null);
@@ -1308,6 +1309,14 @@ function GeneratePage() {
     setShouldAutoGenerate(false);
     void handleSubmit();
   }, [shouldAutoGenerate, session?.user, canSubmit, handleSubmit]);
+
+  // The docked desktop panel shows by default; small screens keep it closed
+  // until the user asks for it. Runs after mount so SSR and hydration agree.
+  useEffect(() => {
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      setIsPanelOpen(true);
+    }
+  }, []);
 
   // ESC leaves the workspace for the homepage. Overlays (history panel,
   // dialogs, parameter menus) close themselves on ESC first, so only a bare
@@ -2140,7 +2149,7 @@ function GeneratePage() {
           <div className="grid divide-y p-6 sm:p-8 md:grid-cols-2 md:divide-x md:divide-y-0">
             {/* Left — the offer: badge, plan name, price, purchase CTA */}
             <div className="pb-8 text-center md:pr-8 md:pb-0">
-              <span className="mx-auto flex h-6 w-fit items-center rounded-full bg-linear-to-br/increasing from-purple-400 to-amber-300 px-3 py-1 text-xs font-medium text-amber-950 ring-1 ring-white/20 ring-inset">
+              <span className="text-muted-foreground mx-auto flex h-6 w-fit items-center px-3 py-1 text-xs font-medium">
                 {m['generator.paywall.title']()}
               </span>
               <h3 className="mt-4 text-2xl font-semibold">

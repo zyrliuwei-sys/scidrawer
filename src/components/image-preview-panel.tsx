@@ -108,9 +108,10 @@ type Props = {
  *  │ [thumb 1] [thumb 2] [thumb 3]          │
  *  └────────────────────────────────────────┘
  *
- * On large screens the panel is permanently docked at a fixed width — no
- * rail, no slide animation, no resize handle. On small screens it stays a
- * modal-like overlay (slides in from the right) toggled by `open`.
+ * On large screens the panel is docked at a fixed width — no rail, no slide
+ * animation, no resize handle. On small screens it stays a modal-like overlay
+ * (slides in from the right). On both, the header close button hides it via
+ * `open`.
  */
 export function ImagePreviewPanel({
   title,
@@ -234,12 +235,12 @@ export function ImagePreviewPanel({
         data-state={open ? 'open' : 'closed'}
         className={cn(
           // On small screens history is a modal-like overlay toggled by
-          // `open`. On large screens the panel is permanently docked at a
-          // fixed width — no rail, no slide, no resize. The 42vw cap keeps
-          // the generator usable on narrower windows.
+          // `open`; on large screens it is docked at a fixed width. When
+          // closed the panel is hidden on every breakpoint. The 42vw cap
+          // keeps the generator usable on narrower windows.
           open
             ? 'fixed inset-3 z-50 flex h-[calc(100dvh-1.5rem)] flex-col lg:relative lg:inset-auto lg:z-auto lg:h-dvh lg:shrink-0'
-            : 'hidden lg:relative lg:z-auto lg:flex lg:h-dvh lg:shrink-0 lg:flex-col',
+            : 'hidden',
           'lg:w-[min(var(--preview-width),42vw)] lg:p-2 lg:pl-0'
         )}
         style={panelStyle}
@@ -306,15 +307,14 @@ export function ImagePreviewPanel({
                   <Trash2 />
                 </Button>
               )}
-              {/* The docked desktop panel is permanent, so closing is a
-                      mobile-overlay-only action. */}
+              {/* Closes (hides) the panel on every breakpoint — desktop
+                      included; the page provides its own way to reopen. */}
               <Button
                 variant="ghost"
                 size="icon-sm"
                 aria-label={copy.close}
                 title={copy.close}
                 onClick={onClose}
-                className="lg:hidden"
               >
                 <X />
               </Button>
