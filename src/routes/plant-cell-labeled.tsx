@@ -1,8 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { ArrowRight, ChevronRight } from 'lucide-react';
 
+import { getSiteUrl } from '@/config';
 import { m } from '@/paraglide/messages.js';
-import { getLocale, locales } from '@/paraglide/runtime.js';
+import {
+  getLocale,
+  locales,
+  localizeHref,
+  localizeUrl,
+} from '@/paraglide/runtime.js';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 
@@ -10,18 +16,33 @@ export const Route = createFileRoute('/plant-cell-labeled')({
   loader: () => {
     const locale = getLocale() as (typeof locales)[number];
     return {
+      locale,
       title: m['plant_cell_page.title']({}, { locale }),
       description: m['plant_cell_page.description']({}, { locale }),
     };
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: loaderData.title },
-          { name: 'description', content: loaderData.description },
-        ]
-      : [],
-  }),
+  head: ({ loaderData }) => {
+    if (!loaderData) return {};
+    const urlFor = (loc: string) =>
+      localizeUrl(`${getSiteUrl()}/plant-cell-labeled`, {
+        locale: loc as (typeof locales)[number],
+      }).href;
+    return {
+      meta: [
+        { title: loaderData.title },
+        { name: 'description', content: loaderData.description },
+      ],
+      links: [
+        { rel: 'canonical', href: urlFor(loaderData.locale) },
+        ...locales.map((loc) => ({
+          rel: 'alternate',
+          hrefLang: loc,
+          href: urlFor(loc),
+        })),
+        { rel: 'alternate', hrefLang: 'x-default', href: urlFor('en') },
+      ],
+    };
+  },
   component: PlantCellLabeledPage,
 });
 
@@ -109,6 +130,29 @@ function PlantCellLabeledPage() {
             {m['plant_cell_page.cta']()}
             <ArrowRight className="size-4" aria-hidden />
           </a>
+        </section>
+
+        <section className="border-border bg-card mx-auto mt-8 max-w-6xl rounded-[1.5rem] border px-7 py-8 sm:px-10 sm:py-10">
+          <h2 className="font-serif text-2xl tracking-tight">
+            {m['template_links.more_templates']()}
+          </h2>
+          <p className="text-muted-foreground mt-3 max-w-3xl leading-7">
+            {m['template_links.description']()}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3">
+            <a
+              href={localizeHref('/graphical-abstract-maker')}
+              className="text-primary decoration-primary/35 hover:decoration-primary font-semibold underline underline-offset-4 transition-colors"
+            >
+              {m['graphical_abstract_page.title']()}
+            </a>
+            <a
+              href={localizeHref('/templates')}
+              className="text-primary decoration-primary/35 hover:decoration-primary font-semibold underline underline-offset-4 transition-colors"
+            >
+              {m['template_links.all_templates']()}
+            </a>
+          </div>
         </section>
       </main>
       <Footer />

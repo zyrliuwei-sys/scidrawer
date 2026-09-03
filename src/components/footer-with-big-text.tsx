@@ -1,5 +1,6 @@
 import { Link } from '@/core/i18n/navigation';
 import { m } from '@/paraglide/messages.js';
+import { localizeHref } from '@/paraglide/runtime.js';
 
 /**
  * Off-site URLs render as plain <a>; internal paths use the locale-aware Link.
@@ -142,6 +143,11 @@ export function FooterWithBigText() {
     {
       title: m['landing.footer.resources'](),
       links: [
+        {
+          label: m['blog.title'](),
+          href: localizeHref('/blog'),
+          native: true,
+        },
         { label: m['landing.footer.faq'](), href: '/#faq' },
         {
           label: m['landing.footer.contact'](),

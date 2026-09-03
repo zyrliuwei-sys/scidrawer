@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ArrowRight } from 'lucide-react';
 
 import { m } from '@/paraglide/messages.js';
-import { getLocale, locales } from '@/paraglide/runtime.js';
+import { getLocale, locales, localizeHref } from '@/paraglide/runtime.js';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { PopularDiagramsSection } from '@/blocks/popular-diagrams';
@@ -53,6 +53,56 @@ function TemplatesPage() {
               {m['templates_page.cta']()}
               <ArrowRight className="size-4" aria-hidden />
             </a>
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="template-landing-pages"
+          className="px-4 pb-16 sm:px-6 sm:pb-20"
+        >
+          <div className="mx-auto max-w-6xl">
+            <div className="grid gap-5 md:grid-cols-2">
+              <a
+                href={localizeHref('/plant-cell-labeled')}
+                className="border-border bg-card group hover:border-primary/40 hover:bg-accent/40 block rounded-[1.5rem] border p-7 transition-colors sm:p-8"
+              >
+                <p className="text-primary text-[11px] font-bold tracking-[0.2em] uppercase">
+                  {m['plant_cell_page.eyebrow']()}
+                </p>
+                <h2
+                  id="template-landing-pages"
+                  className="group-hover:text-primary mt-3 font-serif text-2xl tracking-tight transition-colors"
+                >
+                  {m['plant_cell_page.title']()}
+                </h2>
+                <p className="text-muted-foreground mt-3 leading-7">
+                  {m['plant_cell_page.description']()}
+                </p>
+                <span className="text-primary mt-5 inline-flex items-center gap-2 text-sm font-semibold">
+                  {m['plant_cell_page.title']()}
+                  <ArrowRight className="size-4" aria-hidden />
+                </span>
+              </a>
+
+              <a
+                href={localizeHref('/graphical-abstract-maker')}
+                className="border-border bg-card group hover:border-primary/40 hover:bg-accent/40 block rounded-[1.5rem] border p-7 transition-colors sm:p-8"
+              >
+                <p className="text-primary text-[11px] font-bold tracking-[0.2em] uppercase">
+                  {m['graphical_abstract_page.eyebrow']()}
+                </p>
+                <h2 className="group-hover:text-primary mt-3 font-serif text-2xl tracking-tight transition-colors">
+                  {m['graphical_abstract_page.title']()}
+                </h2>
+                <p className="text-muted-foreground mt-3 leading-7">
+                  {m['graphical_abstract_page.description']()}
+                </p>
+                <span className="text-primary mt-5 inline-flex items-center gap-2 text-sm font-semibold">
+                  {m['graphical_abstract_page.title']()}
+                  <ArrowRight className="size-4" aria-hidden />
+                </span>
+              </a>
+            </div>
           </div>
         </section>
         <PopularDiagramsSection />

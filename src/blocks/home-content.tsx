@@ -34,11 +34,7 @@ export function HomeContent() {
   );
 }
 
-/**
- * Shared loader for the homepage and its keyword vanity URL
- * (/scientific-diagram-maker). Both routes render the same content; the
- * vanity URL exists so on-page SEO audits can see the keyword in the path.
- */
+/** Shared loader for the homepage SEO content. */
 export function homeLoader() {
   const locale = getLocale();
   const opts = { locale: locale as (typeof locales)[number] };
@@ -57,11 +53,7 @@ export function homeLoader() {
   };
 }
 
-/**
- * Builds the head meta for the homepage / vanity URL. `canonicalPath` lets
- * the vanity URL point its canonical at `/` so we don't duplicate content
- * across two URLs (a single canonical, not two).
- */
+/** Builds the head meta for the homepage. */
 export function buildHomeHead(
   loaderData: ReturnType<typeof homeLoader> | undefined,
   options: { canonicalPath: string } = { canonicalPath: '/' }
