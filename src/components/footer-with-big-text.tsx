@@ -168,12 +168,27 @@ export function FooterWithBigText() {
       links: [
         {
           label: m['landing.footer.popular.plant_cell'](),
-          href: '/plant-cell-labeled',
+          href: localizeHref('/plant-cell-labeled'),
           native: true,
         },
         {
           label: m['landing.footer.popular.graphical_abstract'](),
-          href: '/graphical-abstract-maker',
+          href: localizeHref('/graphical-abstract-maker'),
+          native: true,
+        },
+        {
+          label: m['landing.footer.popular.scientific_poster'](),
+          href: localizeHref('/scientific-poster-maker'),
+          native: true,
+        },
+        {
+          label: m['landing.footer.popular.scientific_diagram'](),
+          href: localizeHref('/scientific-diagram-maker'),
+          native: true,
+        },
+        {
+          label: m['landing.footer.popular.generator'](),
+          href: localizeHref('/generate'),
           native: true,
         },
       ],

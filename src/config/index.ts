@@ -90,8 +90,13 @@ export const envConfigs: Record<string, string> = {
 /** The normalized public origin used in canonical URLs, sitemap, and Schema. */
 export function getSiteUrl(): string {
   try {
-    return new URL(envConfigs.site_url).origin;
+    const url = new URL(envConfigs.site_url);
+    // Keep every SEO document on the public www origin even when a production
+    // environment still contains the apex hostname from an older deploy.
+    if (url.hostname === 'scidrawer.com') url.hostname = 'www.scidrawer.com';
+    if (url.hostname === 'www.scidrawer.com') url.protocol = 'https:';
+    return url.origin;
   } catch {
-    return 'https://scidrawer.com';
+    return 'https://www.scidrawer.com';
   }
 }

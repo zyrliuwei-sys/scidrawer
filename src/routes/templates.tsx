@@ -1,8 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { ArrowRight } from 'lucide-react';
 
+import { getSiteUrl } from '@/config';
 import { m } from '@/paraglide/messages.js';
-import { getLocale, locales, localizeHref } from '@/paraglide/runtime.js';
+import {
+  getLocale,
+  locales,
+  localizeHref,
+  localizeUrl,
+} from '@/paraglide/runtime.js';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { PopularDiagramsSection } from '@/blocks/popular-diagrams';
@@ -15,14 +21,33 @@ export const Route = createFileRoute('/templates')({
       description: m['templates_page.description']({}, { locale }),
     };
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: loaderData.title },
-          { name: 'description', content: loaderData.description },
-        ]
-      : [],
-  }),
+  head: ({ loaderData }) => {
+    if (!loaderData) return {};
+    const urlFor = (locale: string) =>
+      localizeUrl(`${getSiteUrl()}/templates`, {
+        locale: locale as (typeof locales)[number],
+      }).href;
+    const canonical = urlFor(loaderData.locale);
+    return {
+      meta: [
+        { title: loaderData.title },
+        { name: 'description', content: loaderData.description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: canonical },
+        { property: 'og:title', content: loaderData.title },
+        { property: 'og:description', content: loaderData.description },
+      ],
+      links: [
+        { rel: 'canonical', href: canonical },
+        ...locales.map((locale) => ({
+          rel: 'alternate',
+          hrefLang: locale,
+          href: urlFor(locale),
+        })),
+        { rel: 'alternate', hrefLang: 'x-default', href: urlFor('en') },
+      ],
+    };
+  },
   component: TemplatesPage,
 });
 
@@ -101,6 +126,93 @@ function TemplatesPage() {
                   {m['graphical_abstract_page.title']()}
                   <ArrowRight className="size-4" aria-hidden />
                 </span>
+              </a>
+
+              <a
+                href={localizeHref('/scientific-poster-maker')}
+                className="border-border bg-card group hover:border-primary/40 hover:bg-accent/40 block rounded-[1.5rem] border p-7 transition-colors sm:p-8"
+              >
+                <p className="text-primary text-[11px] font-bold tracking-[0.2em] uppercase">
+                  {m['scientific_poster_page.eyebrow']()}
+                </p>
+                <h2 className="group-hover:text-primary mt-3 font-serif text-2xl tracking-tight transition-colors">
+                  {m['scientific_poster_page.title']()}
+                </h2>
+                <p className="text-muted-foreground mt-3 leading-7">
+                  {m['scientific_poster_page.description']()}
+                </p>
+                <span className="text-primary mt-5 inline-flex items-center gap-2 text-sm font-semibold">
+                  {m['scientific_poster_page.title']()}
+                  <ArrowRight className="size-4" aria-hidden />
+                </span>
+              </a>
+
+              <a
+                href={localizeHref('/scientific-diagram-maker')}
+                className="border-border bg-card group hover:border-primary/40 hover:bg-accent/40 block rounded-[1.5rem] border p-7 transition-colors sm:p-8"
+              >
+                <p className="text-primary text-[11px] font-bold tracking-[0.2em] uppercase">
+                  {m['scientific_diagram_page.eyebrow']()}
+                </p>
+                <h2 className="group-hover:text-primary mt-3 font-serif text-2xl tracking-tight transition-colors">
+                  {m['scientific_diagram_page.title']()}
+                </h2>
+                <p className="text-muted-foreground mt-3 leading-7">
+                  {m['scientific_diagram_page.description']()}
+                </p>
+                <span className="text-primary mt-5 inline-flex items-center gap-2 text-sm font-semibold">
+                  {m['scientific_diagram_page.title']()}
+                  <ArrowRight className="size-4" aria-hidden />
+                </span>
+              </a>
+
+              <a
+                href={localizeHref('/generate')}
+                className="border-border bg-card group hover:border-primary/40 hover:bg-accent/40 block rounded-[1.5rem] border p-7 transition-colors sm:p-8"
+              >
+                <p className="text-primary text-[11px] font-bold tracking-[0.2em] uppercase">
+                  {m['generator.seo.h1']()}
+                </p>
+                <h2 className="group-hover:text-primary mt-3 font-serif text-2xl tracking-tight transition-colors">
+                  {m['generator.seo.h1']()}
+                </h2>
+                <p className="text-muted-foreground mt-3 leading-7">
+                  {m['generator.seo.indexable_intro']()}
+                </p>
+                <span className="text-primary mt-5 inline-flex items-center gap-2 text-sm font-semibold">
+                  {m['templates_page.cta']()}
+                  <ArrowRight className="size-4" aria-hidden />
+                </span>
+              </a>
+            </div>
+          </div>
+        </section>
+        <section className="px-4 pb-16 sm:px-6 sm:pb-20">
+          <div className="border-border bg-card mx-auto max-w-6xl rounded-[1.5rem] border px-7 py-8 sm:px-10 sm:py-10">
+            <h2 className="font-serif text-2xl tracking-tight">
+              {m['templates_page.title']()}
+            </h2>
+            <p className="text-muted-foreground mt-3 max-w-3xl leading-7">
+              {m['templates_page.description']()}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3">
+              <a
+                href={localizeHref('/cell-membrane-diagram')}
+                className="text-primary font-semibold underline underline-offset-4"
+              >
+                {m['template_pages.cell_membrane']()}
+              </a>
+              <a
+                href={localizeHref('/mitosis-diagram')}
+                className="text-primary font-semibold underline underline-offset-4"
+              >
+                {m['template_pages.mitosis']()}
+              </a>
+              <a
+                href={localizeHref('/neuron-labeled')}
+                className="text-primary font-semibold underline underline-offset-4"
+              >
+                {m['template_pages.neuron']()}
               </a>
             </div>
           </div>

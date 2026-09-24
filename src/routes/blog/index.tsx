@@ -36,6 +36,7 @@ export const Route = createFileRoute('/blog/')({
           hrefLang: loc,
           href: urlFor(loc),
         })),
+        { rel: 'alternate', hrefLang: 'x-default', href: urlFor('en') },
       ],
     };
   },

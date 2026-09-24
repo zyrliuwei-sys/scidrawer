@@ -5,7 +5,7 @@ import { ArrowLeft, Calendar } from 'lucide-react';
 import { Link } from '@/core/i18n/navigation';
 import { envConfigs, getSiteUrl } from '@/config';
 import { m } from '@/paraglide/messages.js';
-import { getLocale, localizeUrl } from '@/paraglide/runtime.js';
+import { getLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { MarkdownContent } from '@/components/markdown-content';
@@ -25,15 +25,32 @@ export const Route = createFileRoute('/blog/$slug')({
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const { locale, post } = loaderData;
-    const canonical = localizeUrl(`${getSiteUrl()}/blog/${post.slug}`, {
-      locale: locale as any,
-    }).href;
+    const urlFor = (loc: string) =>
+      localizeUrl(`${getSiteUrl()}/blog/${post.slug}`, {
+        locale: loc as any,
+      }).href;
+    const canonical = urlFor(locale);
     return {
       meta: [
         { title: `${post.title} | ${envConfigs.app_name}` },
         { name: 'description', content: post.description },
+        { property: 'og:type', content: 'article' },
+        { property: 'og:url', content: canonical },
+        {
+          property: 'og:title',
+          content: `${post.title} | ${envConfigs.app_name}`,
+        },
+        { property: 'og:description', content: post.description },
       ],
-      links: [{ rel: 'canonical', href: canonical }],
+      links: [
+        { rel: 'canonical', href: canonical },
+        ...locales.map((loc) => ({
+          rel: 'alternate',
+          hrefLang: loc,
+          href: urlFor(loc),
+        })),
+        { rel: 'alternate', hrefLang: 'x-default', href: urlFor('en') },
+      ],
     };
   },
   component: BlogPostPage,
@@ -106,6 +123,38 @@ function BlogPostPage() {
           ) : (
             <MarkdownContent content={post.content || ''} />
           )}
+
+          <nav
+            aria-label="Related scientific figure tools"
+            className="border-border mt-10 border-t pt-6"
+          >
+            <h2 className="text-sm font-semibold tracking-tight">
+              Related scientific figure tools
+            </h2>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+              <Link
+                href="/graphical-abstract-maker"
+                className="underline underline-offset-4"
+              >
+                Graphical Abstract Maker
+              </Link>
+              <Link
+                href="/scientific-poster-maker"
+                className="underline underline-offset-4"
+              >
+                Scientific Poster Maker
+              </Link>
+              <Link
+                href="/scientific-diagram-maker"
+                className="underline underline-offset-4"
+              >
+                Scientific Diagram Maker
+              </Link>
+              <Link href="/generate" className="underline underline-offset-4">
+                AI Scientific Figure Generator
+              </Link>
+            </div>
+          </nav>
         </article>
       </main>
       <Footer />

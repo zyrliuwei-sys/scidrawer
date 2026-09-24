@@ -27,6 +27,10 @@ export const Route = createFileRoute('/pricing')({
       meta: [
         { title: loaderData.title },
         { name: 'description', content: loaderData.description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: urlFor(loaderData.locale) },
+        { property: 'og:title', content: loaderData.title },
+        { property: 'og:description', content: loaderData.description },
       ],
       links: [
         { rel: 'canonical', href: urlFor(loaderData.locale) },

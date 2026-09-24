@@ -9,14 +9,14 @@ import {
   type SeoLocale,
 } from '@/content/seo-pages';
 
-const PATH = '/graphical-abstract-maker';
+const PATH = '/scientific-diagram-maker';
 
-export const Route = createFileRoute('/graphical-abstract-maker')({
+export const Route = createFileRoute('/scientific-diagram-maker')({
   loader: () => {
     const locale = getLocale() as SeoLocale;
     return {
       locale,
-      content: getSeoPageContent('graphical-abstract-maker', locale),
+      content: getSeoPageContent('scientific-diagram-maker', locale),
     };
   },
   head: ({ loaderData }) => {
@@ -61,10 +61,10 @@ export const Route = createFileRoute('/graphical-abstract-maker')({
       ],
     };
   },
-  component: GraphicalAbstractMakerPage,
+  component: ScientificDiagramMakerPage,
 });
 
-function GraphicalAbstractMakerPage() {
+function ScientificDiagramMakerPage() {
   const { content } = Route.useLoaderData();
   return <SeoContentPage content={content} />;
 }

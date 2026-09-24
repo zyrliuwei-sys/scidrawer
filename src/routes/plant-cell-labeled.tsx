@@ -31,6 +31,10 @@ export const Route = createFileRoute('/plant-cell-labeled')({
       meta: [
         { title: loaderData.title },
         { name: 'description', content: loaderData.description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: urlFor(loaderData.locale) },
+        { property: 'og:title', content: loaderData.title },
+        { property: 'og:description', content: loaderData.description },
       ],
       links: [
         { rel: 'canonical', href: urlFor(loaderData.locale) },
@@ -151,6 +155,18 @@ function PlantCellLabeledPage() {
               className="text-primary decoration-primary/35 hover:decoration-primary font-semibold underline underline-offset-4 transition-colors"
             >
               {m['template_links.all_templates']()}
+            </a>
+            <a
+              href={localizeHref('/scientific-diagram-maker')}
+              className="text-primary decoration-primary/35 hover:decoration-primary font-semibold underline underline-offset-4 transition-colors"
+            >
+              {m['scientific_diagram_page.title']()}
+            </a>
+            <a
+              href={localizeHref('/scientific-poster-maker')}
+              className="text-primary decoration-primary/35 hover:decoration-primary font-semibold underline underline-offset-4 transition-colors"
+            >
+              {m['scientific_poster_page.title']()}
             </a>
           </div>
         </section>

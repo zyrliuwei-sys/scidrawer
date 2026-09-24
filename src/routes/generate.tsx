@@ -36,11 +36,17 @@ import { toast } from 'sonner';
 
 import { signIn, useSession } from '@/core/auth/client';
 import { Link, useRouter } from '@/core/i18n/navigation';
+import { getSiteUrl } from '@/config';
 import { apiGet, apiPost, apiPostForm } from '@/lib/api-client';
 import { getUuid } from '@/lib/hash';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
-import { getLocale, localizeHref } from '@/paraglide/runtime.js';
+import {
+  getLocale,
+  locales,
+  localizeHref,
+  localizeUrl,
+} from '@/paraglide/runtime.js';
 import { useImagePreview } from '@/hooks/use-image-preview';
 import { usePublicConfig } from '@/hooks/use-public-config';
 import { FigpadWorkspaceSidebar } from '@/components/generator/figpad-workspace-sidebar';
@@ -1538,6 +1544,21 @@ function GeneratePage() {
 
       {/* Main work panel (mirrors figpad's main > section) */}
       <main className="flex h-dvh min-w-0 flex-1 flex-col overflow-hidden bg-white">
+        <section className="sr-only" aria-labelledby="generate-page-title">
+          <h1 id="generate-page-title">{m['generator.seo.h1']()}</h1>
+          <p>{m['generator.seo.indexable_intro']()}</p>
+          <nav aria-label="Related scientific figure tools">
+            <a href={localizeHref('/templates')}>
+              {m['templates_page.title']()}
+            </a>
+            <a href={localizeHref('/graphical-abstract-maker')}>
+              {m['graphical_abstract_page.title']()}
+            </a>
+            <a href={localizeHref('/scientific-poster-maker')}>
+              {m['scientific_poster_page.title']()}
+            </a>
+          </nav>
+        </section>
         <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:hidden">
           <a
             href="/"
@@ -2245,19 +2266,45 @@ export const Route = createFileRoute('/generate')({
     };
   },
   component: GeneratePage,
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData?.title ?? 'Image Generate',
-      },
-      {
-        name: 'description',
-        content:
-          loaderData?.description ??
-          'Create publication-ready scientific figures from a text prompt, sketch, or reference image with AI.',
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const locale = getLocale();
+    const urlFor = (loc: string) =>
+      localizeUrl(`${getSiteUrl()}/generate`, {
+        locale: loc as (typeof locales)[number],
+      }).href;
+    const canonical = urlFor(locale);
+    const title =
+      loaderData?.title ??
+      'AI Scientific Figure Generator - Make Research Diagrams | SciDrawer';
+    const description =
+      loaderData?.description ??
+      'Create publication-ready scientific figures from a text prompt, sketch, or reference image with AI.';
+    return {
+      meta: [
+        { title },
+        { name: 'description', content: description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:site_name', content: 'SciDrawer' },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:url', content: canonical },
+        { property: 'og:image', content: `${getSiteUrl()}/imgs/og.png` },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:image', content: `${getSiteUrl()}/imgs/og.png` },
+      ],
+      links: [
+        { rel: 'canonical', href: canonical },
+        ...locales.map((loc) => ({
+          rel: 'alternate',
+          hrefLang: loc,
+          href: urlFor(loc),
+        })),
+        { rel: 'alternate', hrefLang: 'x-default', href: urlFor('en') },
+      ],
+    };
+  },
 });
 
 /**

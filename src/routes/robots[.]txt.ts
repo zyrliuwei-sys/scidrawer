@@ -11,8 +11,13 @@ export const Route = createFileRoute('/robots.txt')({
           'User-Agent: *',
           'Allow: /',
           'Disallow: /admin',
+          'Disallow: /zh/admin',
           'Disallow: /settings',
+          'Disallow: /zh/settings',
           'Disallow: /api/',
+          // Public routes do not use query parameters to carry indexable
+          // content; prompt, auth, and account URLs are intentionally not
+          // separate search landing pages.
           'Disallow: /*?*',
           '',
           `Sitemap: ${origin}/sitemap.xml`,

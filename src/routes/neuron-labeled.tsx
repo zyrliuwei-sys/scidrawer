@@ -3,20 +3,17 @@ import { createFileRoute } from '@tanstack/react-router';
 import { getSiteUrl } from '@/config';
 import { getLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
 import { SeoContentPage } from '@/components/seo-content-page';
-import {
-  buildSeoPageJsonLd,
-  getSeoPageContent,
-  type SeoLocale,
-} from '@/content/seo-pages';
+import { buildSeoPageJsonLd } from '@/content/seo-pages';
+import { getTemplatePageContent } from '@/content/seo-template-pages';
 
-const PATH = '/graphical-abstract-maker';
+const PATH = '/neuron-labeled';
 
-export const Route = createFileRoute('/graphical-abstract-maker')({
+export const Route = createFileRoute('/neuron-labeled')({
   loader: () => {
-    const locale = getLocale() as SeoLocale;
+    const locale = getLocale() === 'zh' ? 'zh' : 'en';
     return {
       locale,
-      content: getSeoPageContent('graphical-abstract-maker', locale),
+      content: getTemplatePageContent('neuron-labeled', locale),
     };
   },
   head: ({ loaderData }) => {
@@ -26,21 +23,15 @@ export const Route = createFileRoute('/graphical-abstract-maker')({
         locale: locale as (typeof locales)[number],
       }).href;
     const canonical = urlFor(loaderData.locale);
-    const content = loaderData.content;
     return {
       meta: [
-        { title: content.title },
-        { name: 'description', content: content.description },
+        { title: loaderData.content.title },
+        { name: 'description', content: loaderData.content.description },
         { property: 'og:type', content: 'website' },
-        { property: 'og:site_name', content: 'SciDrawer' },
-        { property: 'og:title', content: content.title },
-        { property: 'og:description', content: content.description },
         { property: 'og:url', content: canonical },
+        { property: 'og:title', content: loaderData.content.title },
+        { property: 'og:description', content: loaderData.content.description },
         { property: 'og:image', content: `${getSiteUrl()}/imgs/og.png` },
-        { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: content.title },
-        { name: 'twitter:description', content: content.description },
-        { name: 'twitter:image', content: `${getSiteUrl()}/imgs/og.png` },
       ],
       links: [
         { rel: 'canonical', href: canonical },
@@ -55,16 +46,15 @@ export const Route = createFileRoute('/graphical-abstract-maker')({
         {
           type: 'application/ld+json',
           children: JSON.stringify(
-            buildSeoPageJsonLd(content, canonical, getSiteUrl())
+            buildSeoPageJsonLd(loaderData.content, canonical, getSiteUrl())
           ),
         },
       ],
     };
   },
-  component: GraphicalAbstractMakerPage,
+  component: NeuronLabeledPage,
 });
 
-function GraphicalAbstractMakerPage() {
-  const { content } = Route.useLoaderData();
-  return <SeoContentPage content={content} />;
+function NeuronLabeledPage() {
+  return <SeoContentPage content={Route.useLoaderData().content} />;
 }

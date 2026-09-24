@@ -9,11 +9,22 @@ const STATIC_PATHS = [
   '/pricing',
   '/blog',
   '/templates',
+  '/generate',
   '/graphical-abstract-maker',
+  '/scientific-poster-maker',
+  '/scientific-diagram-maker',
+  '/cell-membrane-diagram',
+  '/mitosis-diagram',
+  '/neuron-labeled',
   '/plant-cell-labeled',
   '/privacy-policy',
   '/terms-of-service',
 ];
+
+// Update this value when public SEO content changes. Keeping it explicit makes
+// the sitemap signal the content deployment date instead of changing on every
+// request.
+const SEO_LAST_MODIFIED = '2026-09-24';
 
 type Entry = {
   path: string;
@@ -55,6 +66,7 @@ export const Route = createFileRoute('/sitemap.xml')({
         const origin = getSiteUrl();
         const entries: Entry[] = STATIC_PATHS.map((path) => ({
           path,
+          lastModified: SEO_LAST_MODIFIED,
           changeFrequency: path === '/blog' ? 'daily' : 'weekly',
           priority: path === '' ? 1 : 0.8,
         }));
