@@ -6,7 +6,11 @@ import { getLocalPosts, mergePosts } from '@/content/posts';
 
 const STATIC_PAGES: { path: string; title: string; description: string }[] = [
   { path: '', title: 'Home', description: 'Landing page' },
-  { path: '/pricing', title: 'Pricing', description: 'Pricing plans' },
+  {
+    path: '/browse',
+    title: 'Browse',
+    description: 'All trending games and guides',
+  },
   { path: '/blog', title: 'Blog', description: 'Blog posts and articles' },
 ];
 

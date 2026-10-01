@@ -149,7 +149,7 @@ export const testSpecs: Record<string, TestSpec> = {
         name: 'filename',
         label: 'Test filename',
         type: 'text',
-        defaultValue: 'scidrawer-settings-test.txt',
+        defaultValue: 'settings-test.txt',
       },
     ],
   },

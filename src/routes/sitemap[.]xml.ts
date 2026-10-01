@@ -2,21 +2,13 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { getSiteUrl } from '@/config';
 import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
+import { CATEGORIES, CONTENT_UPDATED, KEYWORD_PAGES } from '@/content/games';
 import { getLocalPosts, mergePosts } from '@/content/posts';
 
 const STATIC_PATHS = [
   '',
-  '/pricing',
+  '/browse',
   '/blog',
-  '/templates',
-  '/generate',
-  '/graphical-abstract-maker',
-  '/scientific-poster-maker',
-  '/scientific-diagram-maker',
-  '/cell-membrane-diagram',
-  '/mitosis-diagram',
-  '/neuron-labeled',
-  '/plant-cell-labeled',
   '/privacy-policy',
   '/terms-of-service',
 ];
@@ -24,13 +16,15 @@ const STATIC_PATHS = [
 // Update this value when public SEO content changes. Keeping it explicit makes
 // the sitemap signal the content deployment date instead of changing on every
 // request.
-const SEO_LAST_MODIFIED = '2026-09-24';
+const SEO_LAST_MODIFIED = CONTENT_UPDATED;
 
 type Entry = {
   path: string;
   lastModified?: string;
   changeFrequency: string;
   priority: number;
+  /** English-only pages: no hreflang alternates. */
+  englishOnly?: boolean;
 };
 
 function urlFor(path: string, locale: string, origin: string): string {
@@ -40,16 +34,18 @@ function urlFor(path: string, locale: string, origin: string): string {
 }
 
 function entryXml(e: Entry, origin: string): string {
-  const alternates = locales
-    .map(
-      (loc) =>
-        `    <xhtml:link rel="alternate" hreflang="${loc}" href="${urlFor(e.path, loc, origin)}"/>`
-    )
-    .join('\n');
+  const alternates = e.englishOnly
+    ? ''
+    : locales
+        .map(
+          (loc) =>
+            `    <xhtml:link rel="alternate" hreflang="${loc}" href="${urlFor(e.path, loc, origin)}"/>`
+        )
+        .join('\n');
   return [
     '  <url>',
     `    <loc>${urlFor(e.path, baseLocale, origin)}</loc>`,
-    alternates,
+    alternates || null,
     e.lastModified ? `    <lastmod>${e.lastModified}</lastmod>` : null,
     `    <changefreq>${e.changeFrequency}</changefreq>`,
     `    <priority>${e.priority}</priority>`,
@@ -70,6 +66,24 @@ export const Route = createFileRoute('/sitemap.xml')({
           changeFrequency: path === '/blog' ? 'daily' : 'weekly',
           priority: path === '' ? 1 : 0.8,
         }));
+
+        for (const c of CATEGORIES) {
+          entries.push({
+            path: `/category/${c.id}`,
+            lastModified: SEO_LAST_MODIFIED,
+            changeFrequency: 'weekly',
+            priority: 0.7,
+          });
+        }
+        for (const page of KEYWORD_PAGES) {
+          entries.push({
+            path: `/games/${page.slug}`,
+            lastModified: page.updated,
+            changeFrequency: 'weekly',
+            priority: 0.8,
+            englishOnly: true,
+          });
+        }
 
         // Blog posts: db posts merged with local MDX posts.
         try {

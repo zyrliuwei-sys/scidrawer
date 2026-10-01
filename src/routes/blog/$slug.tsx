@@ -125,35 +125,15 @@ function BlogPostPage() {
           )}
 
           <nav
-            aria-label="Related scientific figure tools"
+            aria-label="Explore more games"
             className="border-border mt-10 border-t pt-6"
           >
-            <h2 className="text-sm font-semibold tracking-tight">
-              Related scientific figure tools
-            </h2>
-            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
-              <Link
-                href="/graphical-abstract-maker"
-                className="underline underline-offset-4"
-              >
-                Graphical Abstract Maker
-              </Link>
-              <Link
-                href="/scientific-poster-maker"
-                className="underline underline-offset-4"
-              >
-                Scientific Poster Maker
-              </Link>
-              <Link
-                href="/scientific-diagram-maker"
-                className="underline underline-offset-4"
-              >
-                Scientific Diagram Maker
-              </Link>
-              <Link href="/generate" className="underline underline-offset-4">
-                AI Scientific Figure Generator
-              </Link>
-            </div>
+            <Link
+              href="/browse"
+              className="text-sm underline underline-offset-4"
+            >
+              Browse all trending game guides →
+            </Link>
           </nav>
         </article>
       </main>

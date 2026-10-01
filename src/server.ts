@@ -28,19 +28,6 @@ function ensureCloudflareEnv(): Promise<void> {
 // getLocale() resolves per-request (AsyncLocalStorage) during SSR.
 export default {
   async fetch(req: Request): Promise<Response> {
-    const requestUrl = new URL(req.url);
-    // The canonical public origin is www. Do this at the server boundary so
-    // the apex hostname reaches the canonical URL in one redirect, including
-    // path and query string, before locale middleware or route matching runs.
-    if (requestUrl.hostname === 'scidrawer.com') {
-      return new Response(null, {
-        status: 301,
-        headers: {
-          Location: `https://www.scidrawer.com${requestUrl.pathname}${requestUrl.search}`,
-          'Cache-Control': 'public, max-age=3600',
-        },
-      });
-    }
     await ensureCloudflareEnv();
     const response = await paraglideMiddleware(req, () => handler.fetch(req));
     const utmSource = new URL(req.url).searchParams.get('utm_source');
