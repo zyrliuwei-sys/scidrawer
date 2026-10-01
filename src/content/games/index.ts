@@ -7,6 +7,7 @@ import {
 import { INDIE_KEYWORDS, OTHER_KEYWORDS } from './keywords/indie';
 import { PC_KEYWORDS } from './keywords/pc';
 import { ROBLOX_KEYWORDS } from './keywords/roblox';
+import { TRENDING_OCT_KEYWORDS } from './keywords/trending-oct';
 import { PRODUCT_MAP, PRODUCTS } from './products';
 import type { CategoryId, KeywordInput, KeywordPage, Product } from './types';
 
@@ -52,6 +53,10 @@ const UPPER_WORDS: Record<string, string> = {
   wow: 'WoW',
   apk: 'APK',
   pdf: 'PDF',
+  ea: 'EA',
+  fc: 'FC',
+  wuwa: 'WuWa',
+  aion: 'AION',
 };
 
 /** Title-cases an all-lowercase keyword; keeps already-cased names intact. */
@@ -112,6 +117,7 @@ const ALL_INPUTS: KeywordInput[] = [
   ...PC_KEYWORDS,
   ...INDIE_KEYWORDS,
   ...OTHER_KEYWORDS,
+  ...TRENDING_OCT_KEYWORDS,
 ];
 
 export const KEYWORD_PAGES: KeywordPage[] = ALL_INPUTS.map((input) => {

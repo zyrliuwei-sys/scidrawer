@@ -562,6 +562,61 @@ export const PRODUCTS: Product[] = [
     color: G.purple,
   },
 
+  {
+    id: 'wuthering-waves',
+    name: 'Wuthering Waves',
+    tagline: 'Kuro Games\u2019 open-world action RPG — Version 3.7 is live.',
+    description:
+      'Wuthering Waves (WuWa) is Kuro Games\u2019 free-to-play open-world action RPG. Version 3.7, "Prism\u2019s Illusion, Heart\u2019s Illumination", launched on September 30, 2026 and runs for 42 days until November 11, 2026, concluding the Xuanfang saga in Mengzhou.',
+    url: 'https://wutheringwaves.kurogames.com',
+    cta: 'Official site',
+    platform: 'PC · PS5 · Mobile',
+    category: 'pc-console',
+    tags: ['Open world', 'Action RPG', 'Gacha'],
+    color: G.teal,
+    featured: true,
+    facts: [
+      ['Developer', 'Kuro Games'],
+      ['Version 3.7', 'Sep 30 – Nov 11, 2026'],
+      ['New characters', 'Hsin, Suoming'],
+    ],
+  },
+  {
+    id: 'aion-2',
+    name: 'AION 2',
+    tagline: 'NCSoft\u2019s MMORPG sequel — eight classes, flight and PvPvE.',
+    description:
+      'AION 2 is NCSoft\u2019s sequel to the classic MMORPG Aion. Its global version launches with eight classes covering tank, melee, ranged and support roles, so picking a class is the first big decision for new players.',
+    url: steamSearch('AION 2'),
+    cta: 'Find on Steam',
+    platform: 'PC · Mobile',
+    category: 'pc-console',
+    tags: ['MMORPG', 'Classes', 'PvP'],
+    color: G.purple,
+    facts: [
+      ['Developer', 'NCSoft'],
+      ['Classes', '8'],
+    ],
+  },
+  {
+    id: 'ea-fc-27',
+    name: 'EA SPORTS FC 27',
+    tagline: 'EA\u2019s football sim — plus a free FC 27 Lite edition.',
+    description:
+      'EA SPORTS FC 27 is the latest entry in EA\u2019s football series. Alongside the full game, EA released FC 27 Lite on September 25, 2026 — a free edition that replaces the old time-limited demo with permanent access to selected modes.',
+    url: 'https://store.steampowered.com/app/4407750/EA_SPORTS_FC_27_Lite/',
+    cta: 'Get FC 27 Lite',
+    platform: 'PC · PlayStation · Xbox',
+    category: 'pc-console',
+    tags: ['Football', 'Sports', 'Free edition'],
+    color: G.green,
+    facts: [
+      ['Publisher', 'EA SPORTS'],
+      ['FC 27 Lite release', 'September 25, 2026'],
+      ['Lite price', 'Free'],
+    ],
+  },
+
   // ── Indie / browser / mobile ──────────────────────────────────────────
   {
     id: 'survivor-island',

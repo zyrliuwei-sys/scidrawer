@@ -42,6 +42,12 @@ function toGuide(c: Content, page: KeywordPage): GuideLite {
 
 /** Trending order: hand-picked heads of each franchise, then the rest. */
 const TRENDING = [
+  'control-resonant-taxi',
+  'wuwa-3-7',
+  'ride-a-pet-volcano',
+  'ea-fc-27-lite',
+  'aion-2-classes',
+  'burger-king-fc-27',
   'rockstar-games-gta-vi',
   'lumber-tycoon-2-secret-badge',
   'minecraft-the-sift',
