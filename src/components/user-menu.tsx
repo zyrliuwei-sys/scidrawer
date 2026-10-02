@@ -3,7 +3,6 @@ import {
   EllipsisVerticalIcon,
   LanguagesIcon,
   LogOutIcon,
-  MonitorIcon,
   MoonIcon,
   PaletteIcon,
   SunIcon,
@@ -152,9 +151,7 @@ export function UserMenu({
                 <span className="flex-1">
                   {theme === 'dark'
                     ? m['common.nav.theme_dark']()
-                    : theme === 'light'
-                      ? m['common.nav.theme_light']()
-                      : m['common.nav.theme_system']()}
+                    : m['common.nav.theme_light']()}
                 </span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
@@ -163,19 +160,12 @@ export function UserMenu({
                   <span className="flex-1">
                     {m['common.nav.theme_light']()}
                   </span>
-                  {theme === 'light' && <CheckIcon className="size-3.5" />}
+                  {theme !== 'dark' && <CheckIcon className="size-3.5" />}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setTheme('dark')}>
                   <MoonIcon className="size-4" />
                   <span className="flex-1">{m['common.nav.theme_dark']()}</span>
                   {theme === 'dark' && <CheckIcon className="size-3.5" />}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme('system')}>
-                  <MonitorIcon className="size-4" />
-                  <span className="flex-1">
-                    {m['common.nav.theme_system']()}
-                  </span>
-                  {theme === 'system' && <CheckIcon className="size-3.5" />}
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
