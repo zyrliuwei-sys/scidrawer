@@ -1,5 +1,5 @@
 export const AUTH_SECRET_PLACEHOLDER =
-  'gamelaunch-dev-secret-change-in-production';
+  'scidrawer-dev-secret-change-in-production';
 
 // Isomorphic env access:
 // - Public (client-visible) vars are VITE_-prefixed and read from
@@ -18,14 +18,11 @@ export const envConfigs: Record<string, string> = {
   app_url: publicEnv('VITE_APP_URL') ?? 'http://localhost:3000',
   // The canonical public origin for SEO documents. Keep this separate from
   // `app_url` so deployment-preview and local URLs are never indexed.
-  site_url:
-    publicEnv('VITE_SITE_URL') ??
-    publicEnv('VITE_APP_URL') ??
-    'http://localhost:3000',
-  app_name: publicEnv('VITE_APP_NAME') ?? 'GameLaunch',
+  site_url: publicEnv('VITE_SITE_URL') ?? 'https://www.scidrawer.com',
+  app_name: publicEnv('VITE_APP_NAME') ?? 'SciDrawer',
   app_description:
     publicEnv('VITE_APP_DESCRIPTION') ??
-    'Discover trending games, codes, secrets and release dates in one place.',
+    'AI scientific figures for papers, posters, and presentations.',
   app_logo: publicEnv('VITE_APP_LOGO') ?? '/logo.svg',
 
   // Database
@@ -93,8 +90,13 @@ export const envConfigs: Record<string, string> = {
 /** The normalized public origin used in canonical URLs, sitemap, and Schema. */
 export function getSiteUrl(): string {
   try {
-    return new URL(envConfigs.site_url).origin;
+    const url = new URL(envConfigs.site_url);
+    // Keep every SEO document on the public www origin even when a production
+    // environment still contains the apex hostname from an older deploy.
+    if (url.hostname === 'scidrawer.com') url.hostname = 'www.scidrawer.com';
+    if (url.hostname === 'www.scidrawer.com') url.protocol = 'https:';
+    return url.origin;
   } catch {
-    return 'http://localhost:3000';
+    return 'https://www.scidrawer.com';
   }
 }

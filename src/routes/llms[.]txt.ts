@@ -2,16 +2,11 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { envConfigs, getSiteUrl } from '@/config';
 import { baseLocale } from '@/paraglide/runtime.js';
-import { KEYWORD_PAGES } from '@/content/games';
 import { getLocalPosts, mergePosts } from '@/content/posts';
 
 const STATIC_PAGES: { path: string; title: string; description: string }[] = [
   { path: '', title: 'Home', description: 'Landing page' },
-  {
-    path: '/browse',
-    title: 'Browse',
-    description: 'All trending games and guides',
-  },
+  { path: '/pricing', title: 'Pricing', description: 'Pricing plans' },
   { path: '/blog', title: 'Blog', description: 'Blog posts and articles' },
 ];
 
@@ -50,13 +45,6 @@ export const Route = createFileRoute('/llms.txt')({
             (p) => `- [${p.title}](${app_url}${p.path}): ${p.description}`
           ),
         ];
-
-        lines.push('', '## Game Guides', '');
-        for (const page of KEYWORD_PAGES) {
-          lines.push(
-            `- [${page.heading}](${app_url}/games/${page.slug}): ${page.summary}`
-          );
-        }
 
         if (posts.length > 0) {
           lines.push('', '## Blog Posts', '');

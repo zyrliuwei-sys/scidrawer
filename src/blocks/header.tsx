@@ -1,26 +1,16 @@
 import { m } from '@/paraglide/messages.js';
 import { SiteHeader, type NavLink } from '@/components/site-header';
-import { CATEGORIES } from '@/content/games/categories';
 
 export function Header() {
   const navLinks: NavLink[] = [
-    { href: '/#trending', label: m['dir.nav.trending']() },
-    { href: '/browse', label: m['dir.nav.browse']() },
+    { href: '/generate', label: m['common.nav.generate']() },
     {
-      href: '/#categories',
-      label: m['dir.nav.categories'](),
-      children: CATEGORIES.map((c) => ({
-        href: `/category/${c.id}`,
-        label: `${c.emoji} ${c.name}`,
-      })),
+      href: '/templates',
+      label: m['plant_cell_page.breadcrumb_templates'](),
     },
-    { href: '/blog', label: m['dir.nav.blog']() },
+    { href: '/pricing', label: m['landing.footer.pricing']() },
+    { href: '/#faq', label: m['landing.footer.faq']() },
   ];
 
-  return (
-    <SiteHeader
-      navLinks={navLinks}
-      cta={{ href: '/settings/tickets', label: m['dir.nav.submit']() }}
-    />
-  );
+  return <SiteHeader navLinks={navLinks} />;
 }

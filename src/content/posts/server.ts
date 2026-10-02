@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start';
 import {
   getLocalPosts,
   loadLocalPost,
+  localPostLocales,
   mergePosts,
   type BlogPost,
   type BlogPostDetail,
@@ -84,5 +85,8 @@ export const getBlogPostFn = createServerFn()
       authorName: meta.author_name,
       authorImage: meta.author_image,
       source: 'local',
+      lang: meta.lang,
+      translations: meta.translations,
+      locales: localPostLocales(data.slug),
     };
   });

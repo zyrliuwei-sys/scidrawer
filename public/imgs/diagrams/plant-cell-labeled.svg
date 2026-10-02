@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-labelledby="title desc">
+  <title id="title">Plant cell labeled diagram</title>
+  <desc id="desc">A plant cell diagram showing the cell wall, chloroplasts, vacuole, nucleus, and other organelles.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4f5e9"/>
+      <stop offset="1" stop-color="#dce8cd"/>
+    </linearGradient>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#5d8b50"/>
+      <stop offset="1" stop-color="#346840"/>
+    </linearGradient>
+    <linearGradient id="vacuole" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#bfe3df"/>
+      <stop offset="1" stop-color="#79bfb9"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#2f5037" flood-opacity=".2"/>
+    </filter>
+  </defs>
+  <rect width="600" height="600" fill="url(#background)"/>
+  <g fill="none" stroke="#799879" stroke-width="1" opacity=".35">
+    <path d="M35 76h102M35 99h75M462 74h104M486 100h80M31 510h104M461 531h104"/>
+    <circle cx="66" cy="76" r="3"/><circle cx="530" cy="100" r="3"/><circle cx="101" cy="510" r="3"/><circle cx="528" cy="531" r="3"/>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="104" y="102" width="391" height="384" rx="92" fill="url(#wall)"/>
+    <rect x="117" y="115" width="365" height="358" rx="80" fill="#9fc57e" stroke="#dcebc8" stroke-width="4"/>
+    <rect x="132" y="130" width="335" height="328" rx="67" fill="#d7e9b9" stroke="#669f67" stroke-width="3"/>
+    <path d="M175 158C237 124 355 132 418 183C454 213 447 358 409 404C341 464 231 449 174 399C137 367 137 211 175 158Z" fill="url(#vacuole)" stroke="#539d92" stroke-width="4"/>
+    <ellipse cx="278" cy="307" rx="63" ry="58" fill="#b78cc7" stroke="#764e97" stroke-width="4"/>
+    <circle cx="289" cy="295" r="18" fill="#72558f"/>
+    <path d="M219 255c-22 9-35 23-42 47M215 276c-20 13-31 30-31 53M226 365c-17 4-35 19-42 37M339 247c20-16 44-23 68-17M339 386c24-2 42 8 56 27" fill="none" stroke="#6c78a4" stroke-width="10" stroke-linecap="round"/>
+    <g fill="#5ba256" stroke="#2f6b3c" stroke-width="3">
+      <ellipse cx="168" cy="207" rx="25" ry="14" transform="rotate(-27 168 207)"/>
+      <ellipse cx="208" cy="166" rx="25" ry="14" transform="rotate(19 208 166)"/>
+      <ellipse cx="390" cy="176" rx="25" ry="14" transform="rotate(-23 390 176)"/>
+      <ellipse cx="437" cy="249" rx="25" ry="14" transform="rotate(27 437 249)"/>
+      <ellipse cx="419" cy="369" rx="25" ry="14" transform="rotate(-23 419 369)"/>
+      <ellipse cx="180" cy="396" rx="25" ry="14" transform="rotate(18 180 396)"/>
+    </g>
+    <g stroke="#d6ec9c" stroke-width="3" opacity=".9">
+      <path d="M150 207h36M190 157l35 18M373 181h35M419 238l35 19M400 363h37M162 389l35 16"/>
+    </g>
+    <g fill="#e79a74" stroke="#a95b49" stroke-width="3">
+      <path d="M171 300c-17-16-17-33 0-48c17 15 17 32 0 48Z"/>
+      <path d="M390 317c-17-16-17-33 0-48c17 15 17 32 0 48Z"/>
+      <path d="M230 426c-17-16-17-33 0-48c17 15 17 32 0 48Z"/>
+    </g>
+  </g>
+  <g fill="none" stroke="#315f48" stroke-width="2">
+    <path d="M104 141H53V114"/><path d="M152 205H54"/><path d="M221 306H51V330"/><path d="M410 175h132V142"/><path d="M402 302h143"/><path d="M420 430h119v25"/>
+  </g>
+  <g fill="#284d3b" font-family="Georgia, serif" font-size="15">
+    <text x="32" y="104">Cell wall</text>
+    <text x="32" y="196">Chloroplast</text>
+    <text x="32" y="350">Nucleus</text>
+    <text x="457" y="132">Cell membrane</text>
+    <text x="462" y="294">Central vacuole</text>
+    <text x="456" y="475">Mitochondrion</text>
+  </g>
+  <text x="300" y="555" fill="#315f48" font-family="Georgia, serif" font-size="17" font-weight="700" letter-spacing="2" text-anchor="middle">PLANT CELL · LABELED</text>
+</svg>

@@ -1,9 +1,10 @@
+'use client';
+
 import { useState } from 'react';
 import { ArrowRight, ChevronDown, Menu, X } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
 import { Link } from '@/core/i18n/navigation';
-import { envConfigs } from '@/config';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { LocaleSelector } from '@/components/locale-selector';
@@ -23,32 +24,25 @@ export interface NavLink {
 /** Off-site URLs render as plain <a>; internal paths use the locale-aware Link. */
 const isExternalHref = (href: string) => /^https?:\/\//.test(href);
 
-export function SiteHeader({
-  navLinks,
-  cta,
-}: {
-  navLinks?: NavLink[];
-  /** Primary call-to-action shown next to the user menu. */
-  cta?: { href: string; label: string };
-}) {
+export function SiteHeader({ navLinks }: { navLinks?: NavLink[] }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: session } = useSession();
   const user = session?.user;
 
   return (
-    <header className="bg-background/85 border-border sticky top-0 z-50 w-full border-b backdrop-blur-sm">
+    <header className="bg-background/80 sticky top-0 z-50 w-full backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         {/* Brand — logo + wordmark on the left */}
         <Link href="/" className="flex items-center gap-2">
           <img
             src="/logo.svg"
-            alt={`${envConfigs.app_name} logo`}
+            alt="SciDrawer AI logo"
             width={28}
             height={28}
             className="size-7 rounded-md"
           />
-          <span className="text-lg font-bold tracking-tight">
-            {envConfigs.app_name}
+          <span className="font-serif text-lg font-semibold tracking-tight">
+            SciDrawer AI
           </span>
         </Link>
 
@@ -113,12 +107,6 @@ export function SiteHeader({
         <div className="hidden items-center gap-3 md:flex">
           <LocaleSelector className="hidden" />
           <ThemeToggle />
-          {cta && (
-            <Link href={cta.href} className={cn(buttonVariants(), 'gap-1.5')}>
-              {cta.label}
-              <ArrowRight className="size-4" />
-            </Link>
-          )}
           {user ? (
             <SiteUserMenu
               name={user.name || 'User'}
@@ -126,11 +114,9 @@ export function SiteHeader({
               image={user.image}
             />
           ) : (
-            <Link
-              href="/sign-in"
-              className={cn(buttonVariants({ variant: 'ghost' }))}
-            >
-              {m['common.nav.sign_in']()}
+            <Link href="/settings" className={cn(buttonVariants(), 'gap-1.5')}>
+              {m['common.nav.get_started']()}
+              <ArrowRight className="size-4" />
             </Link>
           )}
         </div>

@@ -5,12 +5,12 @@ import { ArrowLeft, Calendar } from 'lucide-react';
 import { Link } from '@/core/i18n/navigation';
 import { envConfigs, getSiteUrl } from '@/config';
 import { m } from '@/paraglide/messages.js';
-import { getLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
+import { getLocale } from '@/paraglide/runtime.js';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
 import { MarkdownContent } from '@/components/markdown-content';
 import { mdxComponents } from '@/components/mdx-components';
-import { formatPostDate, loadLocalPost } from '@/content/posts';
+import { formatPostDate, loadLocalPost, postUrls } from '@/content/posts';
 import { getBlogPostFn } from '@/content/posts/server';
 
 export const Route = createFileRoute('/blog/$slug')({
@@ -25,31 +25,21 @@ export const Route = createFileRoute('/blog/$slug')({
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const { locale, post } = loaderData;
-    const urlFor = (loc: string) =>
-      localizeUrl(`${getSiteUrl()}/blog/${post.slug}`, {
-        locale: loc as any,
-      }).href;
-    const canonical = urlFor(locale);
+    const { canonical, alternates } = postUrls(post, locale, getSiteUrl());
+    const title = `${post.title} | ${envConfigs.app_name}`;
     return {
       meta: [
-        { title: `${post.title} | ${envConfigs.app_name}` },
+        { title },
         { name: 'description', content: post.description },
         { property: 'og:type', content: 'article' },
         { property: 'og:url', content: canonical },
-        {
-          property: 'og:title',
-          content: `${post.title} | ${envConfigs.app_name}`,
-        },
+        { property: 'og:title', content: title },
         { property: 'og:description', content: post.description },
+        ...(post.lang ? [{ property: 'og:locale', content: post.lang }] : []),
       ],
       links: [
         { rel: 'canonical', href: canonical },
-        ...locales.map((loc) => ({
-          rel: 'alternate',
-          hrefLang: loc,
-          href: urlFor(loc),
-        })),
-        { rel: 'alternate', hrefLang: 'x-default', href: urlFor('en') },
+        ...alternates.map((alt) => ({ rel: 'alternate', ...alt })),
       ],
     };
   },
@@ -68,7 +58,7 @@ function BlogPostPage() {
     <div className="bg-background text-foreground flex min-h-screen flex-col">
       <Header />
       <main className="flex-1 px-6 py-12 md:px-8 md:py-16">
-        <article className="mx-auto max-w-3xl">
+        <article className="mx-auto max-w-3xl" lang={post.lang}>
           <Link
             href="/blog"
             className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium transition-colors"
@@ -125,15 +115,35 @@ function BlogPostPage() {
           )}
 
           <nav
-            aria-label="Explore more games"
+            aria-label="Related scientific figure tools"
             className="border-border mt-10 border-t pt-6"
           >
-            <Link
-              href="/browse"
-              className="text-sm underline underline-offset-4"
-            >
-              Browse all trending game guides →
-            </Link>
+            <h2 className="text-sm font-semibold tracking-tight">
+              Related scientific figure tools
+            </h2>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+              <Link
+                href="/graphical-abstract-maker"
+                className="underline underline-offset-4"
+              >
+                Graphical Abstract Maker
+              </Link>
+              <Link
+                href="/scientific-poster-maker"
+                className="underline underline-offset-4"
+              >
+                Scientific Poster Maker
+              </Link>
+              <Link
+                href="/scientific-diagram-maker"
+                className="underline underline-offset-4"
+              >
+                Scientific Diagram Maker
+              </Link>
+              <Link href="/generate" className="underline underline-offset-4">
+                AI Scientific Figure Generator
+              </Link>
+            </div>
           </nav>
         </article>
       </main>
