@@ -77,7 +77,9 @@ function RootComponent() {
     <QueryClientProvider client={getQueryClient()}>
       <ThemeProvider
         attribute="class"
-        defaultTheme="light"
+        // The site is light-only: forcedTheme also overrides any dark
+        // preference a visitor saved earlier.
+        forcedTheme="light"
         enableSystem={false}
         disableTransitionOnChange
       >
