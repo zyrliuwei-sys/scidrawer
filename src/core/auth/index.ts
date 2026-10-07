@@ -103,6 +103,10 @@ function getSocialSignature(configs: Record<string, string>) {
     // Including the one-tap flag here so toggling it without changing
     // credentials still rebuilds authInstance (which owns the plugin list).
     configs.google_one_tap_enabled || '',
+    // baseURL feeds the OAuth redirect_uri — a changed auth/app URL must
+    // rebuild the instance too, or warm servers keep the stale callback.
+    configs.auth_url || '',
+    configs.app_url || '',
   ].join('|');
 }
 
