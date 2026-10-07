@@ -76,7 +76,9 @@ async function POST({ request }: { request: Request }) {
     // checkout is already signed in, and that page isn't part of this app.
     const finalRedirect = `${baseUrl}${safeRedirectPath}`;
     const successUrl = `${baseUrl}/api/payment/callback?redirect=${encodeURIComponent(finalRedirect)}`;
-    const cancelUrl = `${baseUrl}/pricing`;
+    // Abandoning checkout returns to where it started (e.g. the generator
+    // with the draft prompt) rather than dropping the user on /pricing.
+    const cancelUrl = redirect ? finalRedirect : `${baseUrl}/pricing`;
 
     const checkout = await createCheckout({
       userId: session.user.id,

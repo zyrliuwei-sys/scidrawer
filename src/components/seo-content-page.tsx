@@ -4,6 +4,7 @@ import { ArrowRight, ChevronRight } from 'lucide-react';
 import { localizeHref } from '@/paraglide/runtime.js';
 import { Footer } from '@/blocks/footer';
 import { Header } from '@/blocks/header';
+import { SeoPresetTool } from '@/components/seo-preset-tool';
 import type { SeoLink, SeoPageContent } from '@/content/seo-pages';
 
 function InlineText({ text }: { text: string }) {
@@ -92,26 +93,45 @@ export function SeoContentPage({ content }: { content: SeoPageContent }) {
             <p className="text-muted-foreground mt-6 max-w-xl text-base leading-7 sm:text-lg">
               {content.intro}
             </p>
-            <a
-              href={localizeHref('/generate')}
-              className="bg-primary text-primary-foreground focus-visible:ring-ring mt-8 inline-flex w-fit items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-sm transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-            >
-              {content.ctaLabel}
-              <ArrowRight className="size-4" aria-hidden />
-            </a>
+            {content.tool ? null : (
+              <a
+                href={localizeHref('/generate')}
+                className="bg-primary text-primary-foreground focus-visible:ring-ring mt-8 inline-flex w-fit items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-sm transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              >
+                {content.ctaLabel}
+                <ArrowRight className="size-4" aria-hidden />
+              </a>
+            )}
+            {content.tool ? (
+              <div className="mt-8 hidden max-w-md rounded-2xl border border-white/80 bg-white/90 p-3 lg:block dark:border-white/10 dark:bg-white/5">
+                <img
+                  src={content.heroImage}
+                  alt={content.heroImageAlt}
+                  width={960}
+                  height={640}
+                  className="h-auto w-full"
+                />
+              </div>
+            ) : null}
           </div>
 
-          <div className="relative min-h-100 overflow-hidden bg-emerald-950/10 p-6 sm:p-10">
+          <div className="relative min-h-100 overflow-hidden bg-emerald-950/10 p-4 sm:p-10">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_8%,oklch(0.8_0.13_95_/_0.36),transparent_30%)]" />
-            <div className="relative mx-auto flex h-full max-w-lg items-center rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_28px_54px_oklch(0.19_0.06_165_/_0.22)] backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
-              <img
-                src={content.heroImage}
-                alt={content.heroImageAlt}
-                width={960}
-                height={640}
-                className="h-auto w-full"
-              />
-            </div>
+            {content.tool ? (
+              <div className="relative mx-auto max-w-xl">
+                <SeoPresetTool tool={content.tool} />
+              </div>
+            ) : (
+              <div className="relative mx-auto flex h-full max-w-lg items-center rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_28px_54px_oklch(0.19_0.06_165_/_0.22)] backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
+                <img
+                  src={content.heroImage}
+                  alt={content.heroImageAlt}
+                  width={960}
+                  height={640}
+                  className="h-auto w-full"
+                />
+              </div>
+            )}
           </div>
         </article>
 

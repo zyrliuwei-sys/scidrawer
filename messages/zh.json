@@ -1135,5 +1135,11 @@
   "generator.paywall.starter_title": "入门月套餐 — $9/月",
   "generator.paywall.starter_description": "包含 340 生成积分，有效期一年。",
   "generator.paywall.purchase": "立即订阅",
-  "generator.paywall.view_plans": "查看全部套餐"
+  "generator.paywall.view_plans": "查看全部套餐",
+  "generator.auth_prompt.title": "注册即可免费生成",
+  "generator.auth_prompt.description": "首张图免费。可用 Google 一键继续，或用邮箱登录。",
+  "landing.hero.tools_label": "或直接使用工具：",
+  "landing.hero.tool_graphical_abstract": "图形摘要制作",
+  "landing.hero.tool_poster": "科研海报制作",
+  "landing.hero.tool_diagram": "科研示意图制作"
 }

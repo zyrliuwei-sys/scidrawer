@@ -1135,5 +1135,11 @@
   "generator.paywall.starter_title": "Starter Monthly — $9/mo",
   "generator.paywall.starter_description": "340 render credits, valid for one year.",
   "generator.paywall.purchase": "Subscribe",
-  "generator.paywall.view_plans": "View all plans"
+  "generator.paywall.view_plans": "View all plans",
+  "generator.auth_prompt.title": "Create a free account to generate",
+  "generator.auth_prompt.description": "Your first figure is free. Continue with Google in one click, or sign in with email.",
+  "landing.hero.tools_label": "Or start with a tool:",
+  "landing.hero.tool_graphical_abstract": "Graphical Abstract Maker",
+  "landing.hero.tool_poster": "Scientific Poster Maker",
+  "landing.hero.tool_diagram": "Scientific Diagram Maker"
 }

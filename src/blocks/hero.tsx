@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 
-import { useRouter } from '@/core/i18n/navigation';
+import { Link, useRouter } from '@/core/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
 import { Button } from '@/components/ui/button';
@@ -64,6 +64,38 @@ export function Hero() {
             <Sparkles className="text-primary size-4" aria-hidden="true" />
             {m['landing.hero.prompt_hint']()}
           </p>
+
+          <nav
+            aria-label={m['landing.hero.tools_label']()}
+            className="mt-6 flex flex-wrap items-center gap-2"
+          >
+            <span className="text-muted-foreground mr-1 text-sm">
+              {m['landing.hero.tools_label']()}
+            </span>
+            {[
+              {
+                href: '/graphical-abstract-maker',
+                label: m['landing.hero.tool_graphical_abstract'](),
+              },
+              {
+                href: '/scientific-poster-maker',
+                label: m['landing.hero.tool_poster'](),
+              },
+              {
+                href: '/scientific-diagram-maker',
+                label: m['landing.hero.tool_diagram'](),
+              },
+            ].map((tool) => (
+              <Link
+                key={tool.href}
+                href={tool.href}
+                className="border-border bg-card hover:border-primary/50 hover:text-primary inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors"
+              >
+                {tool.label}
+                <ArrowRight className="size-3.5" aria-hidden="true" />
+              </Link>
+            ))}
+          </nav>
         </div>
         <LandingImages />
       </div>

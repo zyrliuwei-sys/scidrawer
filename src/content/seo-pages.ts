@@ -32,6 +32,39 @@ export type SeoSection = {
   links?: SeoLink[];
 };
 
+export type SeoToolAspect = '16:9' | '4:3' | '1:1';
+
+export type SeoToolLayout = {
+  id: string;
+  label: string;
+  description: string;
+  /** English instruction sent to the image model for this layout. */
+  prompt: string;
+};
+
+/**
+ * A keyword-specific preset of the /generate workspace, rendered in the hero
+ * of an SEO landing page so the page itself is the tool searchers expect.
+ */
+export type SeoTool = {
+  heading: string;
+  description: string;
+  inputLabel: string;
+  inputPlaceholder: string;
+  exampleLabel: string;
+  exampleText: string;
+  layoutLabel: string;
+  layouts: SeoToolLayout[];
+  aspectLabel: string;
+  aspects: { value: SeoToolAspect; label: string }[];
+  defaultAspect: SeoToolAspect;
+  submitLabel: string;
+  emptyError: string;
+  note: string;
+  /** English framing placed before the layout and the user's text. */
+  promptPrefix: string;
+};
+
 export type SeoPageContent = {
   locale: SeoLocale;
   title: string;
@@ -54,6 +87,7 @@ export type SeoPageContent = {
   relatedHeading: string;
   relatedDescription: string;
   relatedLinks: SeoLink[];
+  tool?: SeoTool;
 };
 
 const commonEn = {
@@ -1285,6 +1319,108 @@ const scientificPosterZh: SeoPageContent = {
   ],
 };
 
+// Shared model instructions for the graphical-abstract preset. Kept in English
+// for both locales; labels follow the language of the user's summary.
+const graphicalAbstractToolPrompt = {
+  prefix:
+    'Create a publication-ready graphical abstract for a journal article. Clean flat vector scientific illustration style, white background, consistent restrained color palette, clear visual hierarchy that reads in a few seconds, short on-figure labels only (no paragraphs), no journal logos, no watermark. Write all labels in the same language as the study summary.',
+  layouts: {
+    flow: 'Three panels read left to right with arrows between them: (1) the research question or background, (2) the method or experimental approach, (3) the key finding and its implication. The key finding panel is the visual focus.',
+    mechanism:
+      'A central mechanism or model in the middle of the canvas, with the input or intervention on the left and the downstream effects or outcomes arranged around it, connected by arrows.',
+    comparison:
+      'Side-by-side comparison: control or baseline condition on the left, treatment or new condition on the right, with the key difference highlighted and a one-line takeaway at the bottom.',
+  },
+};
+
+const graphicalAbstractToolEn: SeoTool = {
+  heading: 'Make your graphical abstract',
+  description:
+    'Paste your abstract or key findings, pick a layout, and SciDrawer drafts the figure in the generator.',
+  inputLabel: 'Your abstract or key findings',
+  inputPlaceholder:
+    'e.g. We show that drug X reduces tumor growth in mice by blocking the Y signaling pathway, measured by imaging and RNA-seq...',
+  exampleLabel: 'Use an example',
+  exampleText:
+    'Chronic inflammation in adipose tissue drives insulin resistance. Using single-cell RNA-seq of mouse adipose tissue, we found that macrophage-derived IL-1β suppresses insulin signaling in adipocytes. Blocking IL-1β restored glucose tolerance in obese mice.',
+  layoutLabel: 'Layout',
+  layouts: [
+    {
+      id: 'flow',
+      label: 'Question → Method → Finding',
+      description: 'Three panels, left to right',
+      prompt: graphicalAbstractToolPrompt.layouts.flow,
+    },
+    {
+      id: 'mechanism',
+      label: 'Central mechanism',
+      description: 'Model in the middle, effects around it',
+      prompt: graphicalAbstractToolPrompt.layouts.mechanism,
+    },
+    {
+      id: 'comparison',
+      label: 'Before / after',
+      description: 'Control vs. treatment side by side',
+      prompt: graphicalAbstractToolPrompt.layouts.comparison,
+    },
+  ],
+  aspectLabel: 'Canvas',
+  aspects: [
+    { value: '16:9', label: 'Landscape 16:9' },
+    { value: '4:3', label: 'Standard 4:3' },
+    { value: '1:1', label: 'Square 1:1' },
+  ],
+  defaultAspect: '16:9',
+  submitLabel: 'Generate graphical abstract',
+  emptyError: 'Paste your abstract or key findings first.',
+  note: 'Opens the generator with your settings filled in. Free to try after sign-up.',
+  promptPrefix: graphicalAbstractToolPrompt.prefix,
+};
+
+const graphicalAbstractToolZh: SeoTool = {
+  heading: '生成你的图形摘要',
+  description:
+    '粘贴摘要或核心发现，选一个版式，SciDrawer 会在生成器里帮你画出初稿。',
+  inputLabel: '论文摘要或核心发现',
+  inputPlaceholder:
+    '例如：我们发现药物 X 通过阻断 Y 信号通路抑制小鼠肿瘤生长，并用成像和 RNA-seq 进行了验证……',
+  exampleLabel: '填入示例',
+  exampleText:
+    '脂肪组织慢性炎症会导致胰岛素抵抗。我们对小鼠脂肪组织进行单细胞 RNA 测序，发现巨噬细胞分泌的 IL-1β 会抑制脂肪细胞的胰岛素信号。阻断 IL-1β 可恢复肥胖小鼠的葡萄糖耐量。',
+  layoutLabel: '版式',
+  layouts: [
+    {
+      id: 'flow',
+      label: '问题 → 方法 → 结论',
+      description: '三栏，从左到右',
+      prompt: graphicalAbstractToolPrompt.layouts.flow,
+    },
+    {
+      id: 'mechanism',
+      label: '中心机制',
+      description: '机制居中，效应环绕',
+      prompt: graphicalAbstractToolPrompt.layouts.mechanism,
+    },
+    {
+      id: 'comparison',
+      label: '对照 / 处理',
+      description: '左右对比',
+      prompt: graphicalAbstractToolPrompt.layouts.comparison,
+    },
+  ],
+  aspectLabel: '画布',
+  aspects: [
+    { value: '16:9', label: '横版 16:9' },
+    { value: '4:3', label: '标准 4:3' },
+    { value: '1:1', label: '方形 1:1' },
+  ],
+  defaultAspect: '16:9',
+  submitLabel: '生成图形摘要',
+  emptyError: '请先粘贴摘要或核心发现。',
+  note: '会带着你的设置打开生成器，注册后可免费试用。',
+  promptPrefix: graphicalAbstractToolPrompt.prefix,
+};
+
 const pageContent: Record<
   | 'graphical-abstract-maker'
   | 'scientific-diagram-maker'
@@ -1292,8 +1428,8 @@ const pageContent: Record<
   Record<SeoLocale, SeoPageContent>
 > = {
   'graphical-abstract-maker': {
-    en: graphicalAbstractEn,
-    zh: graphicalAbstractZh,
+    en: { ...graphicalAbstractEn, tool: graphicalAbstractToolEn },
+    zh: { ...graphicalAbstractZh, tool: graphicalAbstractToolZh },
   },
   'scientific-diagram-maker': {
     en: scientificDiagramEn,

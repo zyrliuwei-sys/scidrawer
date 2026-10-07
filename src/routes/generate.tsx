@@ -740,7 +740,7 @@ function FeedProgressCard({
 }
 
 function GeneratePage() {
-  const { prompt: starterPrompt } = Route.useSearch();
+  const { prompt: starterPrompt, aspect: starterAspect } = Route.useSearch();
   const { data: session } = useSession();
   const router = useRouter();
   const [prompt, setPrompt] = useState(starterPrompt ?? '');
@@ -749,7 +749,9 @@ function GeneratePage() {
   const [selectedExampleId, setSelectedExampleId] = useState<string | null>(
     null
   );
-  const [aspect, setAspect] = useState<(typeof IMAGE_SIZES)[number]>('1:1');
+  const [aspect, setAspect] = useState<(typeof IMAGE_SIZES)[number]>(
+    starterAspect ?? '1:1'
+  );
   const [resolution, setResolution] =
     useState<(typeof RESOLUTIONS)[number]>('1K');
   // Match the provider's balanced default and the published one-credit rate.
@@ -1282,7 +1284,7 @@ function GeneratePage() {
           payment_provider: provider,
           // Restore the draft after the hosted checkout returns. The next
           // generation stays a deliberate user action after credits arrive.
-          redirect: `/generate?prompt=${encodeURIComponent(prompt.trim())}`,
+          redirect: `/generate?prompt=${encodeURIComponent(prompt.trim())}&aspect=${encodeURIComponent(aspect)}`,
         }
       );
       if (!checkout.checkout_url) throw new Error('Checkout failed');
@@ -1377,7 +1379,7 @@ function GeneratePage() {
       persistGuestPrompt(prompt);
       persistGuestAutoGeneration();
       // Reload with the new session cookie before returning to the workspace.
-      window.location.assign(localizeHref('/generate'));
+      window.location.assign(localizeHref(authReturnPath));
     } catch (error) {
       setLoginError(
         error instanceof Error
@@ -1389,6 +1391,11 @@ function GeneratePage() {
     }
   };
 
+  // Where a guest lands after signing in or up. The prompt itself travels via
+  // localStorage (it can be long); the canvas ratio rides in the URL so a
+  // preset from a landing page (e.g. 16:9 graphical abstract) survives.
+  const authReturnPath = `/generate?aspect=${encodeURIComponent(aspect)}`;
+
   const handleGoogleSignIn = async () => {
     persistGuestPrompt(prompt);
     persistGuestAutoGeneration();
@@ -1397,7 +1404,7 @@ function GeneratePage() {
     try {
       const result: any = await signIn.social({
         provider: 'google',
-        callbackURL: '/generate',
+        callbackURL: localizeHref(authReturnPath),
       });
       if (result?.error) {
         setLoginError(
@@ -2050,9 +2057,14 @@ function GeneratePage() {
           className="gap-5 p-6 sm:max-w-[25rem]"
           overlayClassName="bg-white"
         >
-          <DialogTitle className="pr-8 text-center text-xl font-semibold tracking-tight text-slate-900">
-            {m['common.sign.sign_in_title']()}
-          </DialogTitle>
+          <div className="space-y-1.5 pr-8 text-center">
+            <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900">
+              {m['generator.auth_prompt.title']()}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              {m['generator.auth_prompt.description']()}
+            </DialogDescription>
+          </div>
 
           <form className="space-y-4" onSubmit={handleEmailSignIn}>
             {loginError && (
@@ -2136,7 +2148,7 @@ function GeneratePage() {
               {m['common.sign.no_account']()}{' '}
               <Link
                 className="font-medium text-slate-900 underline underline-offset-4"
-                href="/sign-up?callbackUrl=/generate"
+                href={`/sign-up?callbackUrl=${encodeURIComponent(authReturnPath)}`}
                 onClick={() => {
                   persistGuestPrompt(prompt);
                   persistGuestAutoGeneration();
@@ -2256,6 +2268,11 @@ export const Route = createFileRoute('/generate')({
       typeof search.prompt === 'string' && search.prompt.trim().length > 0
         ? search.prompt.slice(0, 4_000)
         : undefined,
+    // Keyword landing pages (e.g. /graphical-abstract-maker) hand off a preset
+    // canvas ratio alongside the prompt.
+    aspect: IMAGE_SIZES.includes(search.aspect as (typeof IMAGE_SIZES)[number])
+      ? (search.aspect as (typeof IMAGE_SIZES)[number])
+      : undefined,
   }),
   loader: () => {
     const locale = getLocale();
