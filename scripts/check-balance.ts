@@ -7,7 +7,7 @@
 import { and, desc, eq } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { credit, user } from '@/config/db/schema.postgres';
+import { credit, user } from '@/config/db/schema';
 import { getBalance } from '@/modules/credits/service';
 
 async function main() {

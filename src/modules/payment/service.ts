@@ -17,7 +17,7 @@ import {
   type PaymentEvent,
   type PaymentOrder,
 } from '@/core/payment/types';
-import { credit, order, subscription } from '@/config/db/schema.postgres';
+import { credit, order, subscription } from '@/config/db/schema';
 import { getAllConfigs } from '@/modules/config/service';
 import { calculateCreditExpirationTime } from '@/modules/credits/service';
 import {

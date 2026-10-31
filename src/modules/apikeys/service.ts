@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import { and, count, eq, isNull, like, sql, type SQL } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { apikey } from '@/config/db/schema.postgres';
+import { apikey } from '@/config/db/schema';
 import { decryptSecret, encryptSecret } from '@/lib/crypto';
 import { getUuid } from '@/lib/hash';
 

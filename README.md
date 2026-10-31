@@ -100,6 +100,23 @@ All admin pages include:
 | `pnpm rbac:init`   | Create roles + permissions + optional admin user |
 | `pnpm rbac:assign` | Assign role to user                              |
 
+## Local development with Cloudflare D1
+
+Copy `wrangler.example.jsonc` to `wrangler.jsonc`, set your `account_id` and the
+database ID for the `DB` binding, and set that binding's `remote` property to
+`true`. In `.env.development`, set `DATABASE_PROVIDER=d1` and leave
+`DATABASE_URL` empty. Authenticate with `pnpm exec wrangler login`.
+
+Run `pnpm db:setup`, `pnpm db:push`, and `pnpm dev`. The Node development
+server connects directly to cloud D1 using Wrangler authentication kept on
+the server. Sign-ups, login sessions, and other writes use that cloud
+database. D1 migrations are kept separately in `drizzle/d1`; development
+`db:push` generates and applies them through Wrangler. For production,
+generate and review SQL before applying remote migrations.
+
+Database services import `@/config/db/schema` so `db:setup` selects the
+correct dialect for authentication, permissions, and business queries.
+
 ## Claude Code Skills
 
 | Skill              | What it does                                        |

@@ -2,12 +2,7 @@ import { and, desc, eq, gt, inArray, isNull, or } from 'drizzle-orm';
 
 import { matchAnyPermission, matchPermission, ROLES } from '@/core/auth/rbac';
 import { db } from '@/core/db';
-import {
-  permission,
-  role,
-  rolePermission,
-  userRole,
-} from '@/config/db/schema.postgres';
+import { permission, role, rolePermission, userRole } from '@/config/db/schema';
 import { getUuid } from '@/lib/hash';
 
 export { ROLES } from '@/core/auth/rbac';

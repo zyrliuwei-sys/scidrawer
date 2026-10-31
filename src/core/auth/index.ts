@@ -9,7 +9,7 @@ import { CloudflareEmailProvider } from '@/core/email/cloudflare';
 import { ResendProvider } from '@/core/email/resend';
 import { VerifyEmail } from '@/core/email/templates/verify-email';
 import { AUTH_SECRET_PLACEHOLDER, envConfigs } from '@/config';
-import * as schema from '@/config/db/schema.postgres';
+import * as schema from '@/config/db/schema';
 import { getAllConfigs } from '@/modules/config/service';
 import { grantForNewUser } from '@/modules/credits/service';
 import { grantRoleForNewUser } from '@/modules/rbac/service';

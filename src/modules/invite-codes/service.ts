@@ -2,11 +2,7 @@ import { randomBytes } from 'crypto';
 import { and, eq, sql } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import {
-  inviteCode,
-  subscription,
-  userInvite,
-} from '@/config/db/schema.postgres';
+import { inviteCode, subscription, userInvite } from '@/config/db/schema';
 import { getUuid } from '@/lib/hash';
 
 // ─── Admin: Create invite codes ──────────────────────────────────────────────

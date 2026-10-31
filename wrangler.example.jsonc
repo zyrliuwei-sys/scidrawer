@@ -6,6 +6,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "scidrawer",
+  // For local development with remote D1, set your account_id here and
+  // add "remote": true to the DB binding below.
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true,
@@ -22,7 +24,7 @@
       "binding": "DB",
       "database_name": "scidrawer-db",
       "database_id": "REPLACE_WITH_OUTPUT_OF_WRANGLER_D1_CREATE",
-      "migrations_dir": "drizzle",
+      "migrations_dir": "drizzle/d1",
     },
   ],
   // ── Postgres via Hyperdrive (instead of D1) ────────────────────────────────

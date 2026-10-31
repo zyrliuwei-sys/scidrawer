@@ -2,7 +2,7 @@ import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { AIMediaType } from '@/core/ai/types';
 import { db } from '@/core/db';
-import { aiTask, user } from '@/config/db/schema.postgres';
+import { aiTask, user } from '@/config/db/schema';
 import { consume, revoke } from '@/modules/credits/service';
 import { getUuid } from '@/lib/hash';
 

@@ -6,7 +6,7 @@ import {
   figureProject,
   type FigureProject,
   type NewFigureProject,
-} from '@/config/db/schema.postgres';
+} from '@/config/db/schema';
 import { extractStoredImageUrls } from '@/lib/ai-image-results';
 import { getUuid } from '@/lib/hash';
 

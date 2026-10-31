@@ -10,7 +10,7 @@
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { user } from '@/config/db/schema.postgres';
+import { user } from '@/config/db/schema';
 import {
   CreditTransactionScene,
   getBalance,

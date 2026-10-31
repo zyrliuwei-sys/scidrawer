@@ -56,6 +56,11 @@ export default {
       });
     }
     await ensureCloudflareEnv();
+    if (import.meta.env.DEV && process.env.DATABASE_PROVIDER === 'd1') {
+      const { ensureDevelopmentBindings } =
+        await import('./core/db/dev-bindings');
+      await ensureDevelopmentBindings();
+    }
     const response = await paraglideMiddleware(req, () => handler.fetch(req));
     const utmSource = new URL(req.url).searchParams.get('utm_source');
     const existing = getCookieFromHeader(
