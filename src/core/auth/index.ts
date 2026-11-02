@@ -229,8 +229,16 @@ export function getAuth(configs?: Record<string, string>) {
       isEmailConfigured(configs)
     : false;
   const appName = configs?.app_name || envConfigs.app_name;
-  const appUrl = configs?.app_url || envConfigs.app_url;
-  const authUrl = configs?.auth_url || envConfigs.auth_url || appUrl;
+  // A restored production database can contain an HTTPS OAuth origin. Local
+  // development must keep its own origin so HTTP session cookies still work.
+  const development = process.env.NODE_ENV === 'development';
+  const appUrl = development
+    ? envConfigs.app_url
+    : configs?.app_url || envConfigs.app_url;
+  const authUrl =
+    (development
+      ? envConfigs.auth_url
+      : configs?.auth_url || envConfigs.auth_url) || appUrl;
 
   const instance = betterAuth({
     appName,
