@@ -79,6 +79,9 @@ const PROTECTED_CONFIG_KEYS: ReadonlySet<string> = new Set([
   'db_schema',
   'db_singleton_enabled',
   'db_max_connections',
+  // Managed and validated exclusively by the footer-badges API. Reserving
+  // this key also keeps custom-config replacement from deleting the list.
+  'footer_badges',
 ]);
 
 /**

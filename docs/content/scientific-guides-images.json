@@ -1,0 +1,42 @@
+{
+  "createdAt": "2026-11-03",
+  "generator": "Built-in image_gen",
+  "purpose": "Original conceptual editorial covers for five scientific illustration guides; not experimental evidence.",
+  "covers": [
+    {
+      "slug": "ai-scientific-figure-generator",
+      "prompt": "Use case: scientific-educational. Asset type: wide editorial cover for a practical guide to AI scientific figure generation. Create a refined scientific illustration on a warm white background, landscape 3:2 composition. A slim sheet of research notes at left transforms through a subtle arrow into a large beautifully composed cellular schematic at right: cell membrane, nucleus, a few colored protein shapes, restrained crisp connectors. Delicate navy outlines with teal, apricot and lavender fills. Flat editorial scientific illustration with subtle tactile depth, exceptionally tidy composition and generous whitespace. No charts, no measurement data, no anatomical or clinical claims. No interface, no logos, no text, no letters, no watermark. This is a conceptual illustration, not experimental evidence.",
+      "path": "public/imgs/guides/ai-scientific-figure-generator.webp",
+      "originalFilename": "exec-6e119a8f-4df0-4b6d-a938-3c1822945088.png"
+    },
+    {
+      "slug": "graphical-abstract-generator",
+      "prompt": "Use case: scientific-educational. Asset type: wide editorial cover for a graphical abstract writing guide. Landscape 3:2 image on warm white. A cohesive single scientific visual story moves from left to right across three airy regions: a small material sample and droplet, a simple microfluidic chip receiving a sample, then a magnified translucent droplet with neatly separated colored particles. Deliberate clean flow with just two simple directional arrows. Flat refined scientific editorial illustration with navy linework, muted teal, apricot and lilac, subtle soft shadows, plenty of white space. Hypothetical process concept only, no invented data, plots, numeric values or real-world performance claims. No labels, no lettering, no heading, no logo, no watermark.",
+      "path": "public/imgs/guides/graphical-abstract-generator.webp",
+      "originalFilename": "exec-7de0cbec-acb6-4cb1-affc-01dfd556728f.png"
+    },
+    {
+      "slug": "ai-mechanism-diagram-generator",
+      "prompt": "Use case: scientific-educational. Asset type: landscape 3:2 editorial cover for an AI mechanism diagram guide. Show a simplified hypothetical cellular signaling scene with explicit spatial structure: upper extracellular space with a single teal ligand, a horizontal pale lipid membrane containing one receptor, lower cytoplasm with two discreet kinase-like protein shapes connected by clean downward arrows toward a softly outlined nucleus. A small coral inhibitor branches toward one protein and ends in a blunt T bar. Educational stylized schematic, no named pathway, no clinical claims. Warm white background, crisp navy linework, teal and coral accent, lilac nucleus, flat vector-like scientific illustration with very subtle depth. Spacious, balanced, professional journal editorial aesthetic. No text, no labels, no numbers, no watermark, no decorative DNA.",
+      "path": "public/imgs/guides/ai-mechanism-diagram-generator.webp",
+      "originalFilename": "exec-0023d409-b9f7-4017-9a6f-1c561d805b5d.png"
+    },
+    {
+      "slug": "scientific-diagram-maker",
+      "prompt": "Use case: scientific-educational. Asset type: landscape 3:2 editorial cover for a scientific diagram maker guide. Depict a beautifully simple benchtop microfluidic experiment as an explanatory scientific schematic on warm white: small sample vial on left, transparent rectangular microfluidic chip in middle with two inlet channels merging into one and visible teal/coral fluid, collection vial on right. Precisely aligned navy connectors indicate left-to-right direction. Small magnification inset shows channel cross-section. Flat scientific editorial illustration with fine navy outlines, soft teal and apricot fills, faint lavender accents and minimal shadows. No people, no text, no numbers, no logos, no charts, no measured results. Plenty of whitespace. This is a hypothetical apparatus illustration.",
+      "path": "public/imgs/guides/scientific-diagram-maker.webp",
+      "originalFilename": "exec-9b2913a6-947d-47a0-a9cc-2e06e894d21b.png"
+    },
+    {
+      "slug": "sketch-to-scientific-diagram",
+      "prompt": "Use case: scientific-educational. Asset type: landscape 3:2 editorial cover for sketch-to-scientific-diagram tutorial. A side-by-side transformation diptych on warm white. Left: an off-white paper sheet containing a loose graphite hand sketch of three connected objects: a small sample tube, a rectangular chip, and a collection tube, in that left-to-right order, joined by two arrows. Right: an elegant clean scientific illustration of exactly the SAME three objects in the SAME order with the SAME two arrows, rendered in thin navy outlines and muted teal, apricot and lilac fills. Small subtle right-pointing arrow in the central gap. Preserve topology across both halves, do not add objects or connections to right. Editorial scientific style, generous whitespace, no text, no letters, no labels, no numbers, no logo, no watermark.",
+      "path": "public/imgs/guides/sketch-to-scientific-diagram.webp",
+      "originalFilename": "exec-f4d19ab5-e442-4679-9b31-c45521406b4d.png"
+    }
+  ],
+  "diagrams": {
+    "format": "SVG",
+    "method": "Original hand-authored instructional diagrams",
+    "directory": "public/imgs/guides"
+  }
+}

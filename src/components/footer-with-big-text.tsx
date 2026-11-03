@@ -123,7 +123,7 @@ const FEATURED_BADGES: FeaturedBadge[] = [
   },
 ];
 
-export function FooterWithBigText() {
+export function FooterWithBigText({ badges }: { badges?: React.ReactNode }) {
   const year = new Date().getFullYear();
   const marqueeStyle = {
     '--scroll-duration': '100s',
@@ -270,6 +270,8 @@ export function FooterWithBigText() {
             ))}
           </div>
         </div>
+
+        {badges}
 
         <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-0">
           {columns.map((col) => (

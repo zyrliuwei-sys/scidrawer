@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import {
+  BadgeCheck,
   CreditCard,
   FolderOpen,
   Home,
@@ -8,8 +9,10 @@ import {
   Shield,
 } from 'lucide-react';
 
+import { useSession } from '@/core/auth/client';
 import { envConfigs } from '@/config';
 import { m } from '@/paraglide/messages.js';
+import { useUserPermissions } from '@/hooks/use-user-permissions';
 import { AppLayout } from '@/components/app-layout';
 
 export const Route = createFileRoute('/admin')({
@@ -17,6 +20,8 @@ export const Route = createFileRoute('/admin')({
 });
 
 function AdminLayout() {
+  const { data: session } = useSession();
+  const { data: permissions } = useUserPermissions(!!session?.user);
   const group = m['common.systems.admin']();
   const navItems = [
     {
@@ -62,6 +67,15 @@ function AdminLayout() {
   ];
 
   const footerNavItems = [
+    ...(permissions?.permissions?.includes('*')
+      ? [
+          {
+            href: '/admin/footer-badges',
+            label: m['admin.nav.footer_badges'](),
+            icon: BadgeCheck,
+          },
+        ]
+      : []),
     {
       href: '/admin/settings',
       label: m['admin.nav.settings'](),

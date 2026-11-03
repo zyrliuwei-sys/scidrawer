@@ -12,6 +12,11 @@ import { baseLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
  * local posts via the pure helpers below.
  */
 export const BLOG_POST_SLUGS = [
+  'ai-scientific-figure-generator-guide',
+  'graphical-abstract-generator-guide',
+  'ai-mechanism-diagram-generator-guide',
+  'scientific-diagram-maker-guide',
+  'sketch-to-scientific-diagram-guide',
   'best-scientific-illustration-tools',
   'figurelabs-alternatives',
   'alternativen-zu-figurelabs',

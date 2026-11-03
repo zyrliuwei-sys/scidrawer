@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { filterPublicConfigs, getAllConfigs } from '@/modules/config/service';
+import { getStoredFooterBadges } from '@/modules/footer-badges/service';
 import { respData } from '@/lib/resp';
 
 const noStore = {
@@ -46,8 +47,13 @@ function isEmailSendingConfigured(configs: Record<string, string>): boolean {
 }
 
 async function GET({ request }: { request: Request }) {
-  const configs = await getAllConfigs();
+  const [configs, storedFooterBadges] = await Promise.all([
+    getAllConfigs(),
+    getStoredFooterBadges().catch(() => undefined),
+  ]);
   const result = filterPublicConfigs(configs, publicKeys);
+  if (storedFooterBadges !== undefined)
+    result.footer_badges = storedFooterBadges;
   const emailConfigured = isEmailSendingConfigured(configs);
   result.password_reset_enabled =
     configs.email_auth_enabled !== 'false' && emailConfigured
