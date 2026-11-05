@@ -1,0 +1,21 @@
+# Production receives its configuration from the existing Vercel project.
+.env
+.env.*
+!.env.example
+data/
+.vercel/
+.wrangler/
+.output/
+.nitro/
+.tanstack/
+dist/
+node_modules/
+.git/
+.claude/
+.agents/
+.codex/
+.cursor/
+.DS_Store
+*.tsbuildinfo
+wrangler.jsonc
+src/config/db/schema.ts
